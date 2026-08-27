@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Search, Grid, Eye, Shuffle, Star, ExternalLink, Calendar, Heart, Video, Image, ArrowUpDown, X, Download } from 'lucide-react';
+import ConstellationLoader from './ConstellationLoader';
 
 interface ApodData {
   title: string;
@@ -310,15 +311,8 @@ export default function Discover({ favorites, onToggleFavorite, isFavorite, onSe
 
       {/* Grid List */}
       {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {[...Array(12)].map((_, i) => (
-            <div key={i} className="bg-space-900 border border-space-800 rounded-xl p-4 space-y-4 animate-pulse">
-              <div className="w-full aspect-video bg-space-800 rounded-lg"></div>
-              <div className="h-4 bg-space-800 rounded w-2/3"></div>
-              <div className="h-3 bg-space-800 rounded w-1/3"></div>
-              <div className="h-12 bg-space-800 rounded w-full"></div>
-            </div>
-          ))}
+        <div className="bg-space-900 border border-space-800 rounded-xl p-16 flex flex-col items-center justify-center min-h-[400px]">
+          <ConstellationLoader label="Mapping cosmic coordinates..." />
         </div>
       ) : filteredGallery.length === 0 ? (
         <div className="text-center p-16 bg-space-900 border border-space-800 rounded-xl">

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { AlertCircle, Share2, Download, ChevronLeft, ChevronRight, Shuffle, Calendar, Star, Sparkles } from 'lucide-react';
+import ConstellationLoader from './ConstellationLoader';
 
 interface ApodData {
   title: string;
@@ -310,17 +311,8 @@ export default function NasaApod({ selectedDate, onDateChange, onToggleFavorite,
 
       {/* Loading State */}
       {loading && (
-        <div className="bg-slate-900/20 border border-slate-800 rounded-2xl p-6 space-y-6 animate-pulse">
-          <div className="w-full aspect-video md:h-[480px] bg-slate-800 rounded-xl"></div>
-          <div className="space-y-4">
-            <div className="h-8 bg-slate-800 rounded w-3/4"></div>
-            <div className="h-4 bg-slate-800 rounded w-1/4"></div>
-            <div className="space-y-2">
-              <div className="h-4 bg-slate-800 rounded w-full"></div>
-              <div className="h-4 bg-slate-800 rounded w-full"></div>
-              <div className="h-4 bg-slate-800 rounded w-5/6"></div>
-            </div>
-          </div>
+        <div className="bg-space-900 border border-space-800 rounded-xl p-12 flex flex-col items-center justify-center min-h-[400px] shadow-inner">
+          <ConstellationLoader label="Aligning telescope mirrors..." />
         </div>
       )}
 
