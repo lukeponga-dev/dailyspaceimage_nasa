@@ -58,14 +58,21 @@ const getRandomDate = () => {
 };
 
 const parseMaxDateFromMessage = (msg: string): string | null => {
+  // Try matching ISO format first: "and YYYY-MM-DD" or similar
+  const isoMatch = msg.match(/and\s+(\d{4}-\d{2}-\d{2})/i) || msg.match(/between\s+\d{4}-\d{2}-\d{2}\s+and\s+(\d{4}-\d{2}-\d{2})/i);
+  if (isoMatch) {
+    return isoMatch[1];
+  }
+
+  // Try matching English format: "and Aug 27, 2026" or "and August 27, 2026"
   const match = msg.match(/and\s+([A-Za-z]+)\s+(\d+),\s+(\d+)/);
   if (match) {
     const [_, monthStr, dayStr, yearStr] = match;
     const months: { [key: string]: string } = {
-      Jan: '01', Feb: '02', Mar: '03', Apr: '04', May: '05', Jun: '06',
-      Jul: '07', Aug: '08', Sep: '09', Oct: '10', Nov: '11', Dec: '12'
+      jan: '01', feb: '02', mar: '03', apr: '04', may: '05', jun: '06',
+      jul: '07', aug: '08', sep: '09', oct: '10', nov: '11', dec: '12'
     };
-    const month = months[monthStr.substring(0, 3)];
+    const month = months[monthStr.substring(0, 3).toLowerCase()];
     if (month) {
       const day = dayStr.padStart(2, '0');
       const year = yearStr;
@@ -145,12 +152,16 @@ export default function NasaApod({ selectedDate, onDateChange, onToggleFavorite,
       cache.current.set(date, responseData);
       setData(responseData);
     } catch (err: any) {
-      console.error('Fetch error:', err);
       const errMsg = err.message || 'Failed to connect to NASA servers';
+      const isDateLimitError = errMsg.toLowerCase().includes('date must be') || 
+                               errMsg.toLowerCase().includes('future') || 
+                               errMsg.toLowerCase().includes('400') || 
+                               errMsg.toLowerCase().includes('bad request');
       
       // Attempt to parse maximum available date from NASA error message
       const maxDate = parseMaxDateFromMessage(errMsg);
       if (maxDate) {
+        console.warn('NASA date limit reached. Self-correcting date dynamically to max allowed:', maxDate);
         if (maxDate !== date) {
           onDateChange(maxDate);
           return;
@@ -165,12 +176,14 @@ export default function NasaApod({ selectedDate, onDateChange, onToggleFavorite,
       }
 
       // Fallback: If no max date parsed but the error is related to date limit/future, and we requested today's local date, try yesterday
-      if (date === getLocalDate() && (errMsg.toLowerCase().includes('date must be') || errMsg.toLowerCase().includes('future') || errMsg.toLowerCase().includes('400') || errMsg.toLowerCase().includes('bad request'))) {
+      if (date === getLocalDate() && isDateLimitError) {
+        console.warn('Current date not yet live on NASA. Falling back to yesterday.');
         const yesterday = addDays(date, -1);
         onDateChange(yesterday);
         return;
       }
       
+      console.error('Fetch error:', err);
       setError(errMsg);
     } finally {
       setLoading(false);
@@ -223,32 +236,32 @@ export default function NasaApod({ selectedDate, onDateChange, onToggleFavorite,
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8 animate-fade-in pb-12">
+    <div className="max-w-4xl mx-auto space-y-10 animate-fade-in pb-16">
       {/* Title / Slogan */}
-      <div className="text-center space-y-2">
-        <div className="inline-flex items-center gap-1.5 bg-blue-500/10 text-blue-400 px-3 py-1 rounded-full text-xs font-semibold tracking-wider uppercase border border-blue-500/15">
-          <Sparkles size={12} />
-          NASA Astronomy Picture
+      <div className="text-center space-y-4">
+        <div className="inline-flex items-center gap-1.5 bg-stellar-500/10 text-stellar-400 px-3.5 py-1 rounded-full text-[10px] font-mono tracking-widest uppercase border border-stellar-500/15">
+          <Sparkles size={11} className="animate-pulse" />
+          ASTRONOMY PICTURE OF THE DAY
         </div>
-        <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight bg-gradient-to-r from-blue-400 via-indigo-200 to-purple-400 bg-clip-text text-transparent">
-          Archival Cosmos Finder
-        </h1>
-        <p className="text-slate-400 text-sm md:text-base max-w-lg mx-auto">
-          Explore the historical vaults of the cosmos, date by date.
+        <h2 className="text-4xl md:text-6xl font-serif font-light tracking-tight text-slate-100 max-w-2xl mx-auto leading-none">
+          Discover the <span className="italic font-normal text-stellar-400">Cosmic Vault</span>
+        </h2>
+        <p className="text-slate-400 text-sm md:text-base max-w-lg mx-auto font-sans font-light">
+          Traverse NASA's historical archives of interstellar observations, updated daily.
         </p>
       </div>
 
       {/* Date Navigation Hub */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-slate-900/60 p-4 border border-slate-800/80 rounded-2xl backdrop-blur-md">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-space-900 p-4 border border-space-800 rounded-xl">
         {/* Date Selector and Changers */}
         <div className="flex items-center gap-2 w-full sm:w-auto">
           <button
             onClick={handlePrevDate}
             disabled={selectedDate <= minDate}
-            className="p-2.5 bg-slate-950/80 border border-slate-800 hover:border-slate-700 hover:text-white rounded-xl text-slate-400 disabled:opacity-30 disabled:pointer-events-none transition flex-shrink-0"
+            className="p-2.5 bg-space-950 border border-space-800 hover:border-space-600 hover:text-white rounded-lg text-slate-400 disabled:opacity-30 disabled:pointer-events-none transition duration-200 flex-shrink-0 cursor-pointer"
             title="Yesterday"
           >
-            <ChevronLeft size={20} />
+            <ChevronLeft size={18} />
           </button>
           
           <div className="relative flex-grow sm:flex-grow-0">
@@ -259,17 +272,17 @@ export default function NasaApod({ selectedDate, onDateChange, onToggleFavorite,
               max={todayStr}
               value={selectedDate}
               onChange={(e) => onDateChange(e.target.value)}
-              className="w-full sm:w-48 bg-slate-950/90 text-white border border-slate-800 p-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/40 text-center font-mono text-sm cursor-pointer"
+              className="w-full sm:w-48 bg-space-950 text-slate-200 border border-space-800 p-2 rounded-lg focus:outline-none focus:border-stellar-500/50 text-center font-mono text-xs cursor-pointer tracking-wider"
             />
           </div>
 
           <button
             onClick={handleNextDate}
             disabled={selectedDate >= todayStr}
-            className="p-2.5 bg-slate-950/80 border border-slate-800 hover:border-slate-700 hover:text-white rounded-xl text-slate-400 disabled:opacity-30 disabled:pointer-events-none transition flex-shrink-0"
+            className="p-2.5 bg-space-950 border border-space-800 hover:border-space-600 hover:text-white rounded-lg text-slate-400 disabled:opacity-30 disabled:pointer-events-none transition duration-200 flex-shrink-0 cursor-pointer"
             title="Tomorrow"
           >
-            <ChevronRight size={20} />
+            <ChevronRight size={18} />
           </button>
         </div>
 
@@ -277,19 +290,19 @@ export default function NasaApod({ selectedDate, onDateChange, onToggleFavorite,
         <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
           <button
             onClick={handleRandomDate}
-            className="flex-grow sm:flex-grow-0 inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-950/80 hover:bg-slate-800/65 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-white rounded-xl text-xs font-semibold uppercase tracking-wider transition"
+            className="flex-grow sm:flex-grow-0 inline-flex items-center justify-center gap-2 px-4 py-2 bg-space-950 hover:bg-space-800 border border-space-800 hover:border-space-700 text-slate-300 hover:text-white rounded-lg text-xs font-semibold uppercase tracking-wider transition cursor-pointer"
             title="Random archive date"
           >
-            <Shuffle size={14} />
+            <Shuffle size={13} />
             Random Date
           </button>
           <button
             onClick={handleTodayDate}
             disabled={selectedDate === todayStr}
-            className="flex-grow sm:flex-grow-0 inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white border border-blue-500/30 rounded-xl text-xs font-semibold uppercase tracking-wider disabled:opacity-35 disabled:pointer-events-none transition"
+            className="flex-grow sm:flex-grow-0 inline-flex items-center justify-center gap-2 px-4 py-2 bg-stellar-500 hover:bg-stellar-600 text-space-950 rounded-lg text-xs font-bold uppercase tracking-wider disabled:opacity-35 disabled:pointer-events-none transition cursor-pointer"
             title="Jump to today"
           >
-            <Calendar size={14} />
+            <Calendar size={13} />
             Today
           </button>
         </div>
@@ -332,57 +345,57 @@ export default function NasaApod({ selectedDate, onDateChange, onToggleFavorite,
       {data && !loading && !error && (
         <div className="space-y-8 animate-fade-in">
           {/* Main Display Frame */}
-          <div className="relative rounded-2xl overflow-hidden border border-slate-800 bg-slate-950 shadow-2xl">
+          <div className="relative rounded-xl overflow-hidden border border-space-800 bg-space-900 shadow-2xl">
             {data.media_type === 'image' ? (
               imageError ? (
-                <div className="w-full aspect-video md:h-[480px] bg-slate-900 flex flex-col items-center justify-center text-slate-500 p-6 text-center">
+                <div className="w-full aspect-video md:h-[480px] bg-space-950 flex flex-col items-center justify-center text-slate-500 p-6 text-center">
                   <AlertCircle className="w-12 h-12 mb-4 text-slate-600" />
-                  <p className="font-semibold text-lg">Unable to load deep space picture</p>
-                  <p className="text-xs text-slate-400 max-w-xs mt-1">The telemetry image source could not be resolved. This is occasionally due to temporary DNS disruption at NASA servers.</p>
+                  <p className="font-semibold text-lg text-slate-300">Unable to load deep space picture</p>
+                  <p className="text-xs text-slate-500 max-w-xs mt-1">The telemetry image source could not be resolved. This is occasionally due to temporary DNS disruption at NASA servers.</p>
                 </div>
               ) : (
                 <div className="relative group overflow-hidden max-h-[580px] flex items-center justify-center">
                   <img 
                     src={data.url} 
                     alt={data.title} 
-                    className="w-full object-cover rounded-2xl" 
+                    className="w-full object-cover" 
                     referrerPolicy="no-referrer" 
                     onError={() => setImageError(true)}
                   />
                 </div>
               )
             ) : data.media_type === 'video' && !data.url.includes('youtube') ? (
-              <video src={data.url} controls preload="auto" className="w-full aspect-video max-h-[480px] rounded-2xl" />
+              <video src={data.url} controls preload="auto" className="w-full aspect-video max-h-[480px]" />
             ) : (
               <iframe 
                 src={data.url.includes('youtube.com/watch?v=') ? data.url.replace('watch?v=', 'embed/') : data.url} 
                 title={data.title} 
-                className="w-full aspect-video max-h-[480px] rounded-2xl" 
+                className="w-full aspect-video max-h-[480px]" 
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
               />
             )}
 
             {/* Gradient Mask Overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent opacity-40 pointer-events-none"></div>
+            <div className="absolute inset-0 bg-gradient-to-t from-space-950 via-transparent to-transparent opacity-40 pointer-events-none"></div>
 
             {/* Float Action overlays */}
             <div className="absolute top-4 right-4 flex items-center gap-2">
               {/* Toggle Favorite button */}
               <button
                 onClick={() => onToggleFavorite(data)}
-                className={`p-3 backdrop-blur-md border rounded-full transition-all duration-300 ${isFavorite(data.date) ? 'bg-amber-600/35 border-amber-500/60 text-amber-300 hover:bg-amber-600/50' : 'bg-slate-950/75 border-slate-800 text-slate-300 hover:text-white hover:bg-slate-900'}`}
+                className={`p-2.5 backdrop-blur-md border rounded-full transition-all duration-300 cursor-pointer ${isFavorite(data.date) ? 'bg-stellar-500/15 border-stellar-500/40 text-stellar-400 hover:bg-stellar-500/25' : 'bg-space-950/75 border-space-800 text-slate-300 hover:text-white hover:bg-space-800'}`}
                 title={isFavorite(data.date) ? "Remove from Favorites" : "Add to Favorites"}
               >
-                <Star size={18} className={isFavorite(data.date) ? "fill-amber-400 text-amber-400" : ""} />
+                <Star size={16} className={isFavorite(data.date) ? "fill-stellar-400 text-stellar-400" : ""} />
               </button>
 
               <button
                 onClick={() => handleShare(data)}
-                className="p-3 bg-slate-950/75 backdrop-blur-md border border-slate-800 text-slate-300 hover:text-white hover:bg-slate-900 rounded-full transition"
+                className="p-2.5 bg-space-950/75 backdrop-blur-md border border-space-800 text-slate-300 hover:text-white hover:bg-space-800 rounded-full transition cursor-pointer"
                 title="Share picture"
               >
-                <Share2 size={18} />
+                <Share2 size={16} />
               </button>
               
               {data.media_type === 'image' && (
@@ -390,10 +403,10 @@ export default function NasaApod({ selectedDate, onDateChange, onToggleFavorite,
                   href={data.hdurl || data.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="p-3 bg-slate-950/75 backdrop-blur-md border border-slate-800 text-slate-300 hover:text-white hover:bg-slate-900 rounded-full transition"
+                  className="p-2.5 bg-space-950/75 backdrop-blur-md border border-space-800 text-slate-300 hover:text-white hover:bg-space-800 rounded-full transition cursor-pointer"
                   title="Download HD picture"
                 >
-                  <Download size={18} />
+                  <Download size={16} />
                 </a>
               )}
             </div>
@@ -401,15 +414,15 @@ export default function NasaApod({ selectedDate, onDateChange, onToggleFavorite,
           
           {/* Detailed Narrative Panel */}
           <div className="space-y-6">
-            <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 border-b border-slate-800 pb-5">
+            <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 border-b border-space-800 pb-5">
               <div>
-                <h2 className="text-2xl md:text-3xl font-extrabold text-slate-100">{data.title}</h2>
-                <p className="text-slate-400 text-sm mt-1.5 flex items-center gap-2">
-                  <span className="font-mono">{formatDate(data.date)}</span>
+                <h2 className="text-3xl md:text-4xl font-serif font-medium tracking-tight text-slate-100">{data.title}</h2>
+                <p className="text-slate-400 text-xs mt-2 flex items-center gap-2">
+                  <span className="font-mono bg-space-900 px-2 py-0.5 rounded border border-space-800 text-stellar-400">{formatDate(data.date)}</span>
                   {data.copyright && (
                     <>
                       <span>•</span>
-                      <span className="italic font-sans">Photographer: {data.copyright}</span>
+                      <span className="italic font-sans text-slate-400">Captured by {data.copyright}</span>
                     </>
                   )}
                 </p>
@@ -418,10 +431,10 @@ export default function NasaApod({ selectedDate, onDateChange, onToggleFavorite,
 
             {/* Explanation card */}
             <div className="space-y-3">
-              <h3 className="text-xs font-bold uppercase tracking-widest text-blue-400 flex items-center gap-1.5">
-                Scientific Context
+              <h3 className="text-[10px] font-mono font-bold uppercase tracking-widest text-stellar-400 flex items-center gap-1.5">
+                Scientific Explanation
               </h3>
-              <p className="text-slate-300 text-sm md:text-base leading-relaxed font-sans bg-slate-900/20 p-5 md:p-6 rounded-2xl border border-slate-800/80 shadow-inner">
+              <p className="text-slate-300 text-sm md:text-base leading-relaxed font-sans bg-space-900/60 p-6 md:p-8 rounded-xl border border-space-800 shadow-inner">
                 {data.explanation}
               </p>
             </div>

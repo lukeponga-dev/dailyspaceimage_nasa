@@ -27,14 +27,21 @@ const formatDate = (dateString: string) => {
 };
 
 const parseMaxDateFromMessage = (msg: string): string | null => {
+  // Try matching ISO format first: "and YYYY-MM-DD" or similar
+  const isoMatch = msg.match(/and\s+(\d{4}-\d{2}-\d{2})/i) || msg.match(/between\s+\d{4}-\d{2}-\d{2}\s+and\s+(\d{4}-\d{2}-\d{2})/i);
+  if (isoMatch) {
+    return isoMatch[1];
+  }
+
+  // Try matching English format: "and Aug 27, 2026" or "and August 27, 2026"
   const match = msg.match(/and\s+([A-Za-z]+)\s+(\d+),\s+(\d+)/);
   if (match) {
     const [_, monthStr, dayStr, yearStr] = match;
     const months: { [key: string]: string } = {
-      Jan: '01', Feb: '02', Mar: '03', Apr: '04', May: '05', Jun: '06',
-      Jul: '07', Aug: '08', Sep: '09', Oct: '10', Nov: '11', Dec: '12'
+      jan: '01', feb: '02', mar: '03', apr: '04', may: '05', jun: '06',
+      jul: '07', aug: '08', sep: '09', oct: '10', nov: '11', dec: '12'
     };
-    const month = months[monthStr.substring(0, 3)];
+    const month = months[monthStr.substring(0, 3).toLowerCase()];
     if (month) {
       const day = dayStr.padStart(2, '0');
       const year = yearStr;
@@ -103,11 +110,16 @@ export default function Discover({ favorites, onToggleFavorite, isFavorite, onSe
         setGallery(items);
       }
     } catch (err: any) {
-      console.error('Gallery fetch error:', err);
       const errMsg = err.message || 'Failed to connect to NASA servers';
+      const isDateLimitError = feedMode === 'recent' && (
+        errMsg.toLowerCase().includes('date must be') || 
+        errMsg.toLowerCase().includes('future') || 
+        errMsg.toLowerCase().includes('400') || 
+        errMsg.toLowerCase().includes('bad request')
+      );
       
       // If we are querying recent items and encounter a future date error, try parsing max allowed date and fall back!
-      if (feedMode === 'recent' && (errMsg.toLowerCase().includes('date must be') || errMsg.toLowerCase().includes('future') || errMsg.toLowerCase().includes('400') || errMsg.toLowerCase().includes('bad request'))) {
+      if (isDateLimitError) {
         let maxDateStr = parseMaxDateFromMessage(errMsg);
         
         const now = new Date();
@@ -126,6 +138,7 @@ export default function Discover({ favorites, onToggleFavorite, isFavorite, onSe
         }
 
         if (maxDateStr) {
+          console.warn('Discover gallery date limit reached. Self-correcting range to end on:', maxDateStr);
           const maxDateObj = new Date(maxDateStr + 'T00:00:00');
           const startDateObj = new Date(maxDateObj);
           startDateObj.setDate(startDateObj.getDate() - 30);
@@ -145,7 +158,7 @@ export default function Discover({ favorites, onToggleFavorite, isFavorite, onSe
               return;
             }
           } catch (retryErr) {
-            console.error('Adjusted gallery fetch retry failed:', retryErr);
+            console.warn('Adjusted gallery fetch retry failed:', retryErr);
           }
         } else {
           // Simple fallback: subtract 1 day from end date and try again
@@ -170,10 +183,12 @@ export default function Discover({ favorites, onToggleFavorite, isFavorite, onSe
               return;
             }
           } catch (retryErr) {
-            console.error('1-day gallery fetch retry failed:', retryErr);
+            console.warn('1-day gallery fetch retry failed:', retryErr);
           }
         }
       }
+      
+      console.error('Gallery fetch error:', err);
     } finally {
       setLoading(false);
     }
@@ -210,69 +225,69 @@ export default function Discover({ favorites, onToggleFavorite, isFavorite, onSe
     });
 
   return (
-    <div className="space-y-8 animate-fade-in pb-12">
+    <div className="space-y-8 animate-fade-in pb-16">
       {/* Header section */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight bg-gradient-to-r from-blue-400 via-indigo-200 to-purple-400 bg-clip-text text-transparent">
-            Explore Deep Space
-          </h1>
-          <p className="text-slate-400 mt-2 text-sm md:text-base">
+          <h2 className="text-4xl md:text-5xl font-serif font-light tracking-tight text-slate-100 leading-none">
+            Explore <span className="italic font-normal text-stellar-400">Deep Space</span>
+          </h2>
+          <p className="text-slate-400 mt-2 text-sm md:text-base font-light">
             Browse NASA's extensive cosmic library, search celestial phenomena, and discover historical archives.
           </p>
         </div>
 
         {/* Feed Mode Toggle */}
-        <div className="flex items-center gap-1.5 bg-slate-900 border border-slate-800 p-1 rounded-xl self-start md:self-auto shadow-inner">
+        <div className="flex items-center gap-1.5 bg-space-900 border border-space-800 p-1 rounded-lg self-start md:self-auto shadow-inner">
           <button
             onClick={() => setFeedMode('recent')}
-            className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all duration-200 ${feedMode === 'recent' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-slate-200'}`}
+            className={`flex items-center gap-1.5 px-4 py-2 rounded-md text-xs font-semibold uppercase tracking-wider transition-all duration-200 cursor-pointer ${feedMode === 'recent' ? 'bg-stellar-500 text-space-950 shadow-md' : 'text-slate-400 hover:text-slate-200'}`}
           >
-            <Calendar size={14} />
+            <Calendar size={13} />
             Recent 30 Days
           </button>
           <button
             onClick={() => setFeedMode('random')}
-            className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all duration-200 ${feedMode === 'random' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-slate-200'}`}
+            className={`flex items-center gap-1.5 px-4 py-2 rounded-md text-xs font-semibold uppercase tracking-wider transition-all duration-200 cursor-pointer ${feedMode === 'random' ? 'bg-stellar-500 text-space-950 shadow-md' : 'text-slate-400 hover:text-slate-200'}`}
           >
-            <Shuffle size={14} />
+            <Shuffle size={13} />
             Random Archive
           </button>
         </div>
       </div>
 
       {/* Control Panel: Search & Filters */}
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-4 bg-slate-900/40 p-4 border border-slate-800/80 rounded-2xl backdrop-blur-md">
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-4 bg-space-900 p-4 border border-space-800 rounded-xl">
         {/* Search Input */}
         <div className="relative md:col-span-6">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
           <input
             type="text"
             placeholder="Search cosmic titles & explanations..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-slate-950/80 text-white pl-11 pr-4 py-3 rounded-xl border border-slate-800 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all text-sm"
+            className="w-full bg-space-950 text-slate-100 pl-10 pr-4 py-2.5 rounded-lg border border-space-800 focus:border-stellar-500/50 focus:outline-none transition-all text-sm"
           />
         </div>
 
         {/* Media Type Filter */}
-        <div className="grid grid-cols-3 md:col-span-4 bg-slate-950/50 p-1 border border-slate-800 rounded-xl">
+        <div className="grid grid-cols-3 md:col-span-4 bg-space-950 p-1 border border-space-800 rounded-lg">
           <button
             onClick={() => setMediaTypeFilter('all')}
-            className={`py-2 px-1 rounded-lg text-xs font-medium transition ${mediaTypeFilter === 'all' ? 'bg-slate-800 text-blue-400 font-semibold' : 'text-slate-500 hover:text-slate-300'}`}
+            className={`py-1.5 px-1 rounded-md text-xs font-semibold transition cursor-pointer ${mediaTypeFilter === 'all' ? 'bg-space-900 text-stellar-400' : 'text-slate-500 hover:text-slate-300'}`}
           >
             All Media
           </button>
           <button
             onClick={() => setMediaTypeFilter('image')}
-            className={`py-2 px-1 rounded-lg text-xs font-medium flex items-center justify-center gap-1 transition ${mediaTypeFilter === 'image' ? 'bg-slate-800 text-blue-400 font-semibold' : 'text-slate-500 hover:text-slate-300'}`}
+            className={`py-1.5 px-1 rounded-md text-xs font-semibold flex items-center justify-center gap-1 transition cursor-pointer ${mediaTypeFilter === 'image' ? 'bg-space-900 text-stellar-400' : 'text-slate-500 hover:text-slate-300'}`}
           >
             <Image size={12} />
             Images
           </button>
           <button
             onClick={() => setMediaTypeFilter('video')}
-            className={`py-2 px-1 rounded-lg text-xs font-medium flex items-center justify-center gap-1 transition ${mediaTypeFilter === 'video' ? 'bg-slate-800 text-blue-400 font-semibold' : 'text-slate-500 hover:text-slate-300'}`}
+            className={`py-1.5 px-1 rounded-md text-xs font-semibold flex items-center justify-center gap-1 transition cursor-pointer ${mediaTypeFilter === 'video' ? 'bg-space-900 text-stellar-400' : 'text-slate-500 hover:text-slate-300'}`}
           >
             <Video size={12} />
             Videos
@@ -284,12 +299,12 @@ export default function Discover({ favorites, onToggleFavorite, isFavorite, onSe
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as 'newest' | 'oldest')}
-            className="w-full bg-slate-950/80 text-white py-3 px-4 rounded-xl border border-slate-800 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-xs font-medium cursor-pointer appearance-none"
+            className="w-full bg-space-950 text-slate-200 py-2.5 pl-4 pr-10 rounded-lg border border-space-800 focus:border-stellar-500/50 focus:outline-none text-xs font-semibold cursor-pointer appearance-none"
           >
             <option value="newest">Newest Date</option>
             <option value="oldest">Oldest Date</option>
           </select>
-          <ArrowUpDown size={14} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+          <ArrowUpDown size={13} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
         </div>
       </div>
 
@@ -297,16 +312,16 @@ export default function Discover({ favorites, onToggleFavorite, isFavorite, onSe
       {loading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {[...Array(12)].map((_, i) => (
-            <div key={i} className="bg-slate-900/35 border border-slate-800/80 rounded-2xl p-4 space-y-4 animate-pulse">
-              <div className="w-full aspect-video bg-slate-800 rounded-xl"></div>
-              <div className="h-4 bg-slate-800 rounded w-2/3"></div>
-              <div className="h-3 bg-slate-800 rounded w-1/3"></div>
-              <div className="h-12 bg-slate-800 rounded w-full"></div>
+            <div key={i} className="bg-space-900 border border-space-800 rounded-xl p-4 space-y-4 animate-pulse">
+              <div className="w-full aspect-video bg-space-800 rounded-lg"></div>
+              <div className="h-4 bg-space-800 rounded w-2/3"></div>
+              <div className="h-3 bg-space-800 rounded w-1/3"></div>
+              <div className="h-12 bg-space-800 rounded w-full"></div>
             </div>
           ))}
         </div>
       ) : filteredGallery.length === 0 ? (
-        <div className="text-center p-16 bg-slate-900/20 border border-slate-800 rounded-2xl">
+        <div className="text-center p-16 bg-space-900 border border-space-800 rounded-xl">
           <p className="text-slate-400 text-sm">No cosmic archives match your search criteria.</p>
         </div>
       ) : (
@@ -316,11 +331,11 @@ export default function Discover({ favorites, onToggleFavorite, isFavorite, onSe
             return (
               <div 
                 key={item.date} 
-                className="group bg-slate-900/30 border border-slate-800 hover:border-slate-700/60 rounded-2xl overflow-hidden hover:shadow-2xl hover:-translate-y-0.5 transition-all duration-300 flex flex-col h-full cursor-pointer"
+                className="group bg-space-900/60 border border-space-800 hover:border-space-600 rounded-xl overflow-hidden hover:shadow-[0_12px_24px_rgba(0,0,0,0.55)] hover:-translate-y-0.5 transition-all duration-300 flex flex-col h-full cursor-pointer"
                 onClick={() => handleItemClick(item)}
               >
                 {/* Media frame */}
-                <div className="relative aspect-video overflow-hidden bg-slate-950">
+                <div className="relative aspect-video overflow-hidden bg-space-950">
                   {item.media_type === 'image' ? (
                     <img 
                       src={item.url} 
@@ -330,13 +345,13 @@ export default function Discover({ favorites, onToggleFavorite, isFavorite, onSe
                       loading="lazy"
                     />
                   ) : (
-                    <div className="w-full h-full flex flex-col items-center justify-center bg-slate-950 text-slate-400 space-y-2">
+                    <div className="w-full h-full flex flex-col items-center justify-center bg-space-950 text-slate-400 space-y-2">
                       <Video size={24} className="text-slate-600" />
                       <span className="text-[10px] font-mono uppercase tracking-wider">Video archive</span>
                     </div>
                   )}
 
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent opacity-80"></div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-space-950 via-transparent to-transparent opacity-80"></div>
                   
                   {/* Star rating / Favorite icon */}
                   <button
@@ -344,33 +359,33 @@ export default function Discover({ favorites, onToggleFavorite, isFavorite, onSe
                       e.stopPropagation();
                       onToggleFavorite(item);
                     }}
-                    className="absolute top-3 right-3 p-1.5 bg-slate-950/70 backdrop-blur-md rounded-full border border-slate-800 text-slate-400 hover:text-amber-400 transition"
+                    className={`absolute top-3 right-3 p-1.5 bg-space-950/70 backdrop-blur-md rounded-full border transition cursor-pointer ${favorited ? 'border-stellar-500/40 text-stellar-400' : 'border-space-800 text-slate-400 hover:text-stellar-400'}`}
                   >
-                    <Star size={14} className={favorited ? "text-amber-400 fill-amber-400" : ""} />
+                    <Star size={13} className={favorited ? "text-stellar-400 fill-stellar-400" : ""} />
                   </button>
 
-                  <span className="absolute bottom-3 left-3 bg-slate-950/80 backdrop-blur-sm border border-slate-800/80 px-2 py-0.5 rounded text-[10px] font-mono text-slate-400">
+                  <span className="absolute bottom-3 left-3 bg-space-950/80 backdrop-blur-sm border border-space-800 px-2 py-0.5 rounded text-[10px] font-mono text-slate-400">
                     {formatDate(item.date)}
                   </span>
                 </div>
 
                 {/* Meta details */}
-                <div className="p-5 flex flex-col flex-grow space-y-3">
-                  <h3 className="font-semibold text-slate-200 text-sm leading-snug group-hover:text-blue-400 transition-colors line-clamp-1">
+                <div className="p-4 flex flex-col flex-grow space-y-3">
+                  <h3 className="font-semibold text-slate-200 text-sm leading-snug group-hover:text-stellar-400 transition-colors line-clamp-1">
                     {item.title}
                   </h3>
                   
                   {/* Display preview of description / explanation */}
-                  <p className="text-slate-400 text-xs leading-relaxed line-clamp-3 flex-grow">
+                  <p className="text-slate-400 text-xs leading-relaxed line-clamp-3 flex-grow font-sans font-light">
                     {item.explanation}
                   </p>
 
-                  <div className="flex items-center justify-between pt-3 border-t border-slate-800/60 mt-auto">
-                    <span className="text-[10px] text-slate-500 font-mono capitalize">
+                  <div className="flex items-center justify-between pt-3 border-t border-space-800/60 mt-auto">
+                    <span className="text-[9px] text-slate-500 font-mono uppercase tracking-wider">
                       {item.media_type}
                     </span>
-                    <button className="text-[10px] text-blue-400 group-hover:underline font-medium inline-flex items-center gap-1">
-                      <Eye size={12} />
+                    <button className="text-[10px] text-stellar-400 group-hover:underline font-medium inline-flex items-center gap-1 cursor-pointer">
+                      <Eye size={11} />
                       Read details
                     </button>
                   </div>
@@ -384,37 +399,37 @@ export default function Discover({ favorites, onToggleFavorite, isFavorite, onSe
       {/* Detail Overlay / Modal */}
       {selectedItem && (
         <div 
-          className="fixed inset-0 bg-slate-950/90 backdrop-blur-sm flex items-center justify-center p-4 md:p-6 z-50 animate-fade-in"
+          className="fixed inset-0 bg-space-950/90 backdrop-blur-sm flex items-center justify-center p-4 md:p-6 z-50 animate-fade-in"
           onClick={closeModal}
         >
           <div 
-            className="bg-slate-900 border border-slate-800 p-5 md:p-8 rounded-2xl max-w-4xl w-full max-h-[85vh] overflow-y-auto relative shadow-2xl space-y-6" 
+            className="bg-space-900 border border-space-800 p-5 md:p-8 rounded-xl max-w-4xl w-full max-h-[85vh] overflow-y-auto relative shadow-2xl space-y-6" 
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header / Dismiss */}
-            <div className="flex items-start justify-between gap-4 border-b border-slate-800 pb-4">
+            <div className="flex items-start justify-between gap-4 border-b border-space-800 pb-4">
               <div>
-                <h3 className="text-xl md:text-2xl font-extrabold text-slate-100">{selectedItem.title}</h3>
-                <p className="text-xs text-slate-400 mt-1 flex items-center gap-1.5">
-                  <span className="font-mono">{formatDate(selectedItem.date)}</span>
+                <h3 className="text-2xl md:text-3xl font-serif font-medium tracking-tight text-slate-100">{selectedItem.title}</h3>
+                <p className="text-xs text-slate-400 mt-2 flex items-center gap-1.5">
+                  <span className="font-mono bg-space-950 px-2 py-0.5 rounded border border-space-800 text-stellar-400">{formatDate(selectedItem.date)}</span>
                   {selectedItem.copyright && (
                     <>
                       <span>•</span>
-                      <span className="italic">© {selectedItem.copyright}</span>
+                      <span className="italic font-sans text-slate-400">Captured by {selectedItem.copyright}</span>
                     </>
                   )}
                 </p>
               </div>
               <button 
                 onClick={closeModal} 
-                className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white rounded-full border border-slate-700 transition"
+                className="p-1.5 bg-space-950 hover:bg-space-800 text-slate-400 hover:text-white rounded-full border border-space-800 hover:border-space-600 transition cursor-pointer"
               >
                 <X size={18} />
               </button>
             </div>
 
             {/* Media content */}
-            <div className="rounded-xl overflow-hidden bg-slate-950 border border-slate-800 aspect-video max-h-96 flex items-center justify-center relative">
+            <div className="rounded-lg overflow-hidden bg-space-950 border border-space-800 aspect-video max-h-96 flex items-center justify-center relative">
               {selectedItem.media_type === 'image' ? (
                 <img 
                   src={selectedItem.url} 
@@ -435,30 +450,30 @@ export default function Discover({ favorites, onToggleFavorite, isFavorite, onSe
 
             {/* Rich details: Explanation text */}
             <div className="space-y-4">
-              <h4 className="text-xs uppercase tracking-widest font-bold text-blue-400">Cosmic Narrative</h4>
-              <p className="text-slate-300 text-sm md:text-base leading-relaxed bg-slate-950/40 p-4 rounded-xl border border-slate-800/55 font-sans">
+              <h4 className="text-[10px] uppercase font-mono font-bold tracking-widest text-stellar-400">Cosmic Narrative</h4>
+              <p className="text-slate-300 text-sm md:text-base leading-relaxed bg-space-950/60 p-6 rounded-lg border border-space-800/85 font-sans font-light">
                 {selectedItem.explanation}
               </p>
             </div>
 
             {/* Action buttons */}
-            <div className="flex flex-wrap items-center gap-3 pt-4 border-t border-slate-800/80">
+            <div className="flex flex-wrap items-center gap-3 pt-4 border-t border-space-800">
               <button
                 onClick={() => {
                   onSelectImage(selectedItem.date);
                   closeModal();
                 }}
-                className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-xs md:text-sm font-semibold px-5 py-2.5 rounded-xl shadow transition"
+                className="inline-flex items-center gap-2 bg-stellar-500 hover:bg-stellar-600 text-space-950 text-xs font-bold px-4 py-2.5 rounded-lg shadow-lg transition cursor-pointer"
               >
-                <ExternalLink size={16} />
+                <ExternalLink size={14} />
                 Load in Today Single-View
               </button>
               
               <button
                 onClick={() => onToggleFavorite(selectedItem)}
-                className={`inline-flex items-center gap-2 text-xs md:text-sm font-semibold px-5 py-2.5 rounded-xl border transition ${isFavorite(selectedItem.date) ? 'bg-amber-600/20 border-amber-500/55 text-amber-300 hover:bg-amber-600/30' : 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700'}`}
+                className={`inline-flex items-center gap-2 text-xs font-bold px-4 py-2.5 rounded-lg border transition cursor-pointer ${isFavorite(selectedItem.date) ? 'bg-stellar-500/15 border-stellar-500/40 text-stellar-400 hover:bg-stellar-500/25' : 'bg-space-950 border border-space-800 text-slate-300 hover:border-space-600'}`}
               >
-                <Heart size={16} className={isFavorite(selectedItem.date) ? "fill-amber-400 text-amber-400" : ""} />
+                <Heart size={14} className={isFavorite(selectedItem.date) ? "fill-stellar-400 text-stellar-400" : ""} />
                 {isFavorite(selectedItem.date) ? 'Favorited' : 'Add to Favorites'}
               </button>
 
@@ -467,9 +482,9 @@ export default function Discover({ favorites, onToggleFavorite, isFavorite, onSe
                   href={selectedItem.hdurl || selectedItem.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 bg-slate-800 border border-slate-700 text-slate-300 hover:bg-slate-700 text-xs md:text-sm font-semibold px-5 py-2.5 rounded-xl transition ml-auto"
+                  className="inline-flex items-center gap-2 bg-space-950 border border-space-800 text-slate-300 hover:border-space-600 text-xs font-bold px-4 py-2.5 rounded-lg transition sm:ml-auto cursor-pointer"
                 >
-                  <Download size={16} />
+                  <Download size={14} />
                   Full Resolution HD
                 </a>
               )}

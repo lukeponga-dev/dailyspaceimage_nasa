@@ -1,13 +1,25 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400..700;1,400..700&family=JetBrains+Mono:wght@400;500&display=swap');
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Playfair Display", Georgia, serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+
+  /* Custom luxury colors representing deep obsidian space and stellar gold/amber */
+  --color-space-950: #050608;
+  --color-space-900: #0C0E12;
+  --color-space-800: #14171E;
+  --color-space-700: #1C212B;
+  --color-space-600: #252B38;
+  
+  --color-stellar-400: #F3C47B;
+  --color-stellar-500: #E4A853;
+  --color-stellar-600: #C98A39;
 }
 
 @layer base {
   body {
-    @apply bg-slate-950 text-slate-100 font-sans;
+    @apply bg-space-950 text-slate-100 font-sans tracking-wide antialiased selection:bg-stellar-500/20 selection:text-stellar-400;
   }
 }
