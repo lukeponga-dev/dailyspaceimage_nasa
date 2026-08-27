@@ -423,7 +423,19 @@ export default function Discover({ favorites, onToggleFavorite, isFavorite, onSe
             </div>
 
             {/* Media content */}
-            <div className="rounded-lg overflow-hidden bg-space-950 border border-space-800 aspect-video max-h-96 flex items-center justify-center relative">
+            <div className="relative">
+              {/* JWST Hex-Gold Optics catching light - background flare */}
+              <div className="absolute -inset-8 pointer-events-none overflow-hidden z-0 select-none">
+                <div 
+                  className="w-full h-full opacity-14 blur-2xl animate-pulse"
+                  style={{ 
+                    backgroundImage: 'radial-gradient(circle, rgba(228, 168, 83, 0.25) 0%, rgba(228, 168, 83, 0.04) 45%, transparent 75%)',
+                    animationDuration: '10s'
+                  }}
+                />
+              </div>
+
+              <div className="relative z-10 rounded-lg overflow-hidden bg-space-950 border border-space-800 aspect-video max-h-96 flex items-center justify-center">
               {selectedItem.media_type === 'image' ? (
                 <img 
                   src={selectedItem.url} 
@@ -441,6 +453,7 @@ export default function Discover({ favorites, onToggleFavorite, isFavorite, onSe
                 />
               )}
             </div>
+          </div>
 
             {/* Rich details: Explanation text */}
             <div className="space-y-4">

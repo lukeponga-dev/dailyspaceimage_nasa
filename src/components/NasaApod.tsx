@@ -255,32 +255,67 @@ export default function NasaApod({ selectedDate, onDateChange, onToggleFavorite,
       {/* Date Navigation Hub */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-space-900 p-4 border border-space-800 rounded-xl">
         {/* Date Selector and Changers */}
-        <div className="flex items-center gap-2 w-full sm:w-auto">
+        <div className="flex items-center justify-center gap-4 w-full sm:w-auto">
           <button
             onClick={handlePrevDate}
             disabled={selectedDate <= minDate}
-            className="p-2.5 bg-space-950 border border-space-800 hover:border-space-600 hover:text-white rounded-lg text-slate-400 disabled:opacity-30 disabled:pointer-events-none transition duration-200 flex-shrink-0 cursor-pointer"
+            className="p-3 bg-space-950 border border-space-800 hover:border-space-600 hover:text-stellar-400 rounded-full text-slate-400 disabled:opacity-30 disabled:pointer-events-none transition duration-200 flex-shrink-0 cursor-pointer"
             title="Yesterday"
           >
             <ChevronLeft size={18} />
           </button>
           
-          <div className="relative flex-grow sm:flex-grow-0">
-            <input
-              type="date"
-              id="date"
-              min={minDate}
-              max={todayStr}
-              value={selectedDate}
-              onChange={(e) => onDateChange(e.target.value)}
-              className="w-full sm:w-48 bg-space-950 text-slate-200 border border-space-800 p-2 rounded-lg focus:outline-none focus:border-stellar-500/50 text-center font-mono text-xs cursor-pointer tracking-wider"
-            />
+          {/* Telescope Date Dial Orb */}
+          <div className="relative flex-shrink-0">
+            <button
+              className="
+                relative h-16 w-16 rounded-full
+                bg-[#050608] 
+                flex flex-col items-center justify-center
+                shadow-[0_0_20px_rgba(228,168,83,0.25)]
+                border border-[#E4A853]/40
+                backdrop-blur-md
+                transition-all duration-300
+                hover:shadow-[0_0_30px_rgba(228,168,83,0.45)]
+                hover:border-[#E4A853]/60
+                active:scale-95
+                group/orb
+              "
+            >
+              <span className="text-[8px] font-mono tracking-widest text-[#E4A853]/85 uppercase select-none leading-none mb-0.5">
+                {(() => {
+                  try {
+                    const d = new Date(selectedDate + 'T00:00:00');
+                    return d.toLocaleDateString('en-US', { month: 'short' }).toUpperCase();
+                  } catch {
+                    return 'DATE';
+                  }
+                })()}
+              </span>
+              <span className="text-lg font-serif font-bold text-[#E4A853] select-none leading-none group-hover/orb:text-[#ffd99e] transition-colors">
+                {selectedDate.split('-')[2] || '01'}
+              </span>
+              
+              {/* Subtle inner dial ticks overlay */}
+              <span className="absolute inset-1.5 rounded-full border border-[#E4A853]/10 group-hover/orb:border-[#E4A853]/20 transition-colors duration-300" />
+              
+              {/* Interactive Date Select Overlaid */}
+              <input
+                type="date"
+                min={minDate}
+                max={todayStr}
+                value={selectedDate}
+                onChange={(e) => onDateChange(e.target.value)}
+                className="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-20 rounded-full"
+                title="Choose custom date"
+              />
+            </button>
           </div>
 
           <button
             onClick={handleNextDate}
             disabled={selectedDate >= todayStr}
-            className="p-2.5 bg-space-950 border border-space-800 hover:border-space-600 hover:text-white rounded-lg text-slate-400 disabled:opacity-30 disabled:pointer-events-none transition duration-200 flex-shrink-0 cursor-pointer"
+            className="p-3 bg-space-950 border border-space-800 hover:border-space-600 hover:text-stellar-400 rounded-full text-slate-400 disabled:opacity-30 disabled:pointer-events-none transition duration-200 flex-shrink-0 cursor-pointer"
             title="Tomorrow"
           >
             <ChevronRight size={18} />
@@ -335,9 +370,20 @@ export default function NasaApod({ selectedDate, onDateChange, onToggleFavorite,
       
       {/* Detail Showcase */}
       {data && !loading && !error && (
-        <div className="space-y-8 animate-fade-in">
+        <div className="space-y-8 animate-fade-in relative">
+          {/* JWST Hex-Gold Optics catching light - background flare */}
+          <div className="absolute -inset-12 pointer-events-none overflow-hidden z-0 select-none">
+            <div 
+              className="w-full h-full opacity-14 blur-3xl animate-pulse"
+              style={{ 
+                backgroundImage: 'radial-gradient(circle, rgba(228, 168, 83, 0.28) 0%, rgba(228, 168, 83, 0.05) 50%, transparent 75%)',
+                animationDuration: '8s'
+              }}
+            />
+          </div>
+
           {/* Main Display Frame */}
-          <div className="relative rounded-xl overflow-hidden border border-space-800 bg-space-900 shadow-2xl">
+          <div className="relative z-10 rounded-xl overflow-hidden border border-space-800 bg-space-900 shadow-2xl">
             {data.media_type === 'image' ? (
               imageError ? (
                 <div className="w-full aspect-video md:h-[480px] bg-space-950 flex flex-col items-center justify-center text-slate-500 p-6 text-center">
