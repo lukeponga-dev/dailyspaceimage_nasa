@@ -112,7 +112,12 @@ export default function App() {
 
   return (
     <ErrorBoundary>
-      <Layout currentView={currentView} onNavigate={setCurrentView}>
+      <Layout 
+        currentView={currentView} 
+        onNavigate={setCurrentView}
+        selectedDate={selectedDate}
+        onDateChange={handleSelectDate}
+      >
         {renderView()}
       </Layout>
     </ErrorBoundary>
