@@ -351,14 +351,14 @@ export default function NasaApod({ selectedDate, onDateChange, onToggleFavorite,
 
             </div>
 
-            {/* Action Buttons: Warp Random / Reset Today */}
+            {/* Action Buttons: I'm Feeling Lucky / Reset Today */}
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 md:gap-8 w-full max-w-lg mx-auto lg:max-w-none">
               <button
                 onClick={handleRandomDate}
                 className="w-full sm:w-[180px] flex items-center justify-center gap-2 px-6 py-3 bg-[#E4A853] hover:bg-[#f3be73] text-[#050608] shadow-[0_0_15px_rgba(228,168,83,0.3)] rounded-sm text-sm font-semibold tracking-wide transition-all duration-300 cursor-pointer active:scale-95"
-                title="Warp to a Random Date"
+                title="I'm Feeling Lucky (Random APOD Date)"
               >
-                Warp Random
+                I'm Feeling Lucky
               </button>
               
               <button

@@ -58,6 +58,7 @@ export default function Discover({ favorites, onToggleFavorite, isFavorite, onSe
   const [mediaTypeFilter, setMediaTypeFilter] = useState<'all' | 'image' | 'video'>('all');
   const [feedMode, setFeedMode] = useState<'recent' | 'random'>('recent');
   const [sortBy, setSortBy] = useState<'newest' | 'oldest'>('newest');
+  const [gridColumns, setGridColumns] = useState<'grid2x2' | 'grid4x4'>('grid2x2');
   
   const [selectedItem, setSelectedItem] = useState<ApodData | null>(null);
 
@@ -196,38 +197,67 @@ export default function Discover({ favorites, onToggleFavorite, isFavorite, onSe
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
           <h2 className="text-4xl md:text-5xl font-serif font-semibold tracking-tight text-slate-100 leading-none">
-            Explore <span className="italic font-light text-[#E4A853]">Deep Space</span>
+            Voyage <span className="italic font-light text-[#E4A853]">Galactic Gallery</span>
           </h2>
           <p className="text-slate-400 mt-3 text-sm md:text-base font-light font-sans tracking-wide">
-            Browse NASA's extensive cosmic library, search celestial phenomena, and discover historical archives.
+            Explore NASA's deep-space archives in grid view, search celestial phenomena, and discover historical imagery.
           </p>
         </div>
 
-        {/* Premium Feed Mode Toggle */}
-        <div className="flex items-center gap-1.5 bg-[#0C0E12] border border-white/5 p-1 rounded-full self-start md:self-auto shadow-lg relative z-10">
-          <button
-            onClick={() => setFeedMode('recent')}
-            className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all duration-300 cursor-pointer active:scale-95 select-none ${
-              feedMode === 'recent' 
-                ? 'bg-[#E4A853] text-[#050608] shadow-[0_4px_15px_rgba(228,168,83,0.3)]' 
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <Calendar size={11} />
-            Recent Array
-          </button>
-          
-          <button
-            onClick={() => setFeedMode('random')}
-            className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all duration-300 cursor-pointer active:scale-95 select-none ${
-              feedMode === 'random' 
-                ? 'bg-[#E4A853] text-[#050608] shadow-[0_4px_15px_rgba(228,168,83,0.3)]' 
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <Shuffle size={11} />
-            Random Coordinates
-          </button>
+        {/* Premium Feed Mode & Layout Toggle */}
+        <div className="flex flex-wrap items-center gap-3 self-start md:self-auto relative z-10">
+          <div className="flex items-center gap-1 bg-[#050608] border border-white/5 p-1 rounded-full">
+            <button
+              onClick={() => setGridColumns('grid2x2')}
+              title="2x2 Grid View"
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-mono font-bold transition-all cursor-pointer ${
+                gridColumns === 'grid2x2'
+                  ? 'bg-[#E4A853]/20 text-[#E4A853] border border-[#E4A853]/30'
+                  : 'text-slate-500 hover:text-slate-300'
+              }`}
+            >
+              <Grid size={13} />
+              <span>2x2 Grid</span>
+            </button>
+            <button
+              onClick={() => setGridColumns('grid4x4')}
+              title="Compact Grid View (4 Columns)"
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-mono font-bold transition-all cursor-pointer ${
+                gridColumns === 'grid4x4'
+                  ? 'bg-[#E4A853]/20 text-[#E4A853] border border-[#E4A853]/30'
+                  : 'text-slate-500 hover:text-slate-300'
+              }`}
+            >
+              <Eye size={13} />
+              <span>4 Col</span>
+            </button>
+          </div>
+
+          <div className="flex items-center gap-1.5 bg-[#0C0E12] border border-white/5 p-1 rounded-full shadow-lg">
+            <button
+              onClick={() => setFeedMode('recent')}
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all duration-300 cursor-pointer active:scale-95 select-none ${
+                feedMode === 'recent' 
+                  ? 'bg-[#E4A853] text-[#050608] shadow-[0_4px_15px_rgba(228,168,83,0.3)]' 
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Calendar size={11} />
+              Recent Array
+            </button>
+            
+            <button
+              onClick={() => setFeedMode('random')}
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all duration-300 cursor-pointer active:scale-95 select-none ${
+                feedMode === 'random' 
+                  ? 'bg-[#E4A853] text-[#050608] shadow-[0_4px_15px_rgba(228,168,83,0.3)]' 
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Shuffle size={11} />
+              Random Coordinates
+            </button>
+          </div>
         </div>
       </div>
 
@@ -308,7 +338,11 @@ export default function Discover({ favorites, onToggleFavorite, isFavorite, onSe
           <p className="text-slate-400 text-xs font-sans font-light tracking-wide">No cosmic archives match your search query parameters.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        <div className={`grid gap-6 transition-all duration-500 ${
+          gridColumns === 'grid2x2' 
+            ? 'grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2' 
+            : 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4'
+        }`}>
           {filteredGallery.map((item) => {
             const favorited = isFavorite(item.date);
             return (
