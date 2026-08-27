@@ -150,9 +150,18 @@ export default function NasaApod({ selectedDate, onDateChange, onToggleFavorite,
       
       // Attempt to parse maximum available date from NASA error message
       const maxDate = parseMaxDateFromMessage(errMsg);
-      if (maxDate && maxDate !== date) {
-        onDateChange(maxDate);
-        return;
+      if (maxDate) {
+        if (maxDate !== date) {
+          onDateChange(maxDate);
+          return;
+        } else {
+          // If the parsed max date is equal to the requested date but it failed,
+          // it means NASA hasn't published it yet despite listing it as the limit.
+          // Fallback to the day before.
+          const yesterday = addDays(maxDate, -1);
+          onDateChange(yesterday);
+          return;
+        }
       }
 
       // Fallback: If no max date parsed but the error is related to date limit/future, and we requested today's local date, try yesterday

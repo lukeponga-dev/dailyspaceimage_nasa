@@ -108,7 +108,23 @@ export default function Discover({ favorites, onToggleFavorite, isFavorite, onSe
       
       // If we are querying recent items and encounter a future date error, try parsing max allowed date and fall back!
       if (feedMode === 'recent' && (errMsg.toLowerCase().includes('date must be') || errMsg.toLowerCase().includes('future') || errMsg.toLowerCase().includes('400') || errMsg.toLowerCase().includes('bad request'))) {
-        const maxDateStr = parseMaxDateFromMessage(errMsg);
+        let maxDateStr = parseMaxDateFromMessage(errMsg);
+        
+        const now = new Date();
+        const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+        
+        // If no max date was parsed, use yesterday as end date
+        if (!maxDateStr) {
+          const dateObj = new Date();
+          dateObj.setDate(dateObj.getDate() - 1);
+          maxDateStr = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`;
+        } else if (maxDateStr === todayStr) {
+          // If the parsed max date is equal to today's date (which failed), use yesterday instead
+          const dateObj = new Date(maxDateStr + 'T00:00:00');
+          dateObj.setDate(dateObj.getDate() - 1);
+          maxDateStr = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`;
+        }
+
         if (maxDateStr) {
           const maxDateObj = new Date(maxDateStr + 'T00:00:00');
           const startDateObj = new Date(maxDateObj);
@@ -133,10 +149,10 @@ export default function Discover({ favorites, onToggleFavorite, isFavorite, onSe
           }
         } else {
           // Simple fallback: subtract 1 day from end date and try again
-          const now = new Date();
-          now.setDate(now.getDate() - 1);
-          const endDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-          const startDateObj = new Date(now);
+          const dateObj = new Date();
+          dateObj.setDate(dateObj.getDate() - 1);
+          const endDate = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`;
+          const startDateObj = new Date(dateObj);
           startDateObj.setDate(startDateObj.getDate() - 30);
           const startDate = `${startDateObj.getFullYear()}-${String(startDateObj.getMonth() + 1).padStart(2, '0')}-${String(startDateObj.getDate()).padStart(2, '0')}`;
           const adjustedUrl = `https://api.nasa.gov/planetary/apod?api_key=${NASA_API_KEY}&start_date=${startDate}&end_date=${endDate}`;
