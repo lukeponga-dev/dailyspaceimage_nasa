@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'motion/react';
-import { Compass, Sparkles, Star, ChevronRight, Activity, Globe, Eye, Rocket } from 'lucide-react';
+import { Compass, Sparkles, Star, ChevronRight, ChevronDown, Activity, Globe, Eye, Rocket } from 'lucide-react';
 import { getEasternDate } from '../utils/dateUtils';
 import { ApodData } from '../types';
 
@@ -10,12 +10,12 @@ interface LandingPageProps {
   onSelectDate?: (date: string) => void;
 }
 
-
 export default function LandingPage({ onNavigate, favoritesCount, onSelectDate }: LandingPageProps) {
   const [todayData, setTodayData] = useState<ApodData | null>(null);
   const [loading, setLoading] = useState(true);
   const [imageError, setImageError] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const spotlightRef = useRef<HTMLDivElement | null>(null);
 
   // Fetch today's featured image for the spotlight
   useEffect(() => {
@@ -231,8 +231,29 @@ export default function LandingPage({ onNavigate, favoritesCount, onSelectDate }
         </div>
       </div>
 
+      {/* 
+        Scroll Cue: Animated guide encouraging first-time visitors to explore the content below
+        - What it does: Smoothly scrolls the viewport to the Spotlight & Highlights section on click.
+        - Why it exists: Fulfills user onboarding heuristics by preventing the hero section from feeling like a dead-end page.
+        - How it fits into the workflow: Anchored between the greeting card and the dynamic daily APOD preview.
+      */}
+      <div className="flex justify-center -my-8 sm:-my-10 relative z-20">
+        <button
+          id="landing-scroll-cue-btn"
+          type="button"
+          onClick={() => spotlightRef.current?.scrollIntoView({ behavior: 'smooth' })}
+          className="group flex flex-col items-center gap-1.5 px-4 py-2 rounded-full bg-[#0C0E12]/90 border border-[#E4A853]/30 hover:border-[#E4A853]/70 backdrop-blur-md text-[#E4A853] hover:text-[#ffd99e] transition-all duration-300 cursor-pointer shadow-[0_4px_25px_rgba(0,0,0,0.7),0_0_15px_rgba(228,168,83,0.15)] active:scale-95"
+          aria-label="Scroll down to discover daily spotlight and cosmic archive"
+        >
+          <span className="text-[10px] font-mono tracking-widest uppercase font-semibold text-slate-300 group-hover:text-[#E4A853] transition-colors">
+            Scroll to Discover
+          </span>
+          <ChevronDown size={14} className="animate-bounce text-[#E4A853]" />
+        </button>
+      </div>
+
       {/* Today's Featured Spotlight preview */}
-      <div className="space-y-6 text-left">
+      <div ref={spotlightRef} className="space-y-6 text-left pt-6">
         <div className="flex items-center justify-between border-b border-white/5 pb-3">
           <div className="space-y-1">
             <span className="text-[10px] font-mono text-[#E4A853] uppercase tracking-widest font-bold">Today's Highlight Coordinates</span>

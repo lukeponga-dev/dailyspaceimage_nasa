@@ -24,8 +24,20 @@
  *   Acts as the primary presentation layer when users browse daily or historical astronomical entries.
  */
 
-import React, { useState } from 'react';
-import { Maximize2, Download, Share2, Star, Sparkles, AlertTriangle, ExternalLink } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { 
+  Maximize2, 
+  Minimize2, 
+  Download, 
+  Share2, 
+  Star, 
+  Sparkles, 
+  AlertTriangle, 
+  ExternalLink,
+  ZoomIn,
+  ZoomOut,
+  ChevronDown
+} from 'lucide-react';
 import { motion } from 'motion/react';
 import { ApodData } from '../types';
 import { formatDate } from '../utils/dateUtils';
@@ -47,7 +59,43 @@ export default function ApodHero({
 }: ApodHeroProps) {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
+  const [isZoomed, setIsZoomed] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const stageRef = useRef<HTMLDivElement | null>(null);
+  const analysisRef = useRef<HTMLDivElement | null>(null);
   const isVideo = data.media_type === 'video';
+
+  // Listen for native fullscreen changes
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
+
+  /**
+   * Toggles native browser full-screen mode on the image stage.
+   * - What it does: Calls requestFullscreen or exitFullscreen on the image stage container.
+   * - Why it exists: Fulfills requests for an immersive, edge-to-edge astronomical viewing experience.
+   * - How it fits into the workflow: Triggered from the stage overlay button or the header action bar.
+   */
+  const handleToggleFullscreen = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    if (!document.fullscreenElement) {
+      stageRef.current?.requestFullscreen?.();
+    } else {
+      document.exitFullscreen?.();
+    }
+  };
+
+  /**
+   * Toggles in-place tap-to-zoom magnification.
+   */
+  const handleToggleZoom = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsZoomed(prev => !prev);
+  };
 
   /**
    * Dispatches client-side download for HD celestial imagery.
@@ -102,21 +150,34 @@ export default function ApodHero({
       <div aria-hidden="true" className="absolute bottom-3 left-3 w-4 h-4 border-l-2 border-b-2 border-[#E4A853]/40 pointer-events-none" />
       <div aria-hidden="true" className="absolute bottom-3 right-3 w-4 h-4 border-r-2 border-b-2 border-[#E4A853]/40 pointer-events-none" />
 
-      {/* Top Header: Observation Timestamp & Interactive Action Controls */}
-      <header className="flex flex-wrap items-center justify-between gap-4 border-b border-white/5 pb-4 mb-6">
-        <div className="flex items-center gap-2">
+      {/* Top Header: Observation Timestamp, Live Telemetry & Interactive Action Controls */}
+      <header className="flex flex-wrap items-center justify-between gap-3 sm:gap-4 border-b border-white/5 pb-4 mb-6">
+        <div className="flex flex-wrap items-center gap-2">
           <time
             dateTime={data.date}
             className="px-2.5 py-1 rounded-full bg-[#E4A853]/15 border border-[#E4A853]/30 text-[#E4A853] text-[10px] font-mono uppercase font-bold tracking-wider"
           >
             {formatDate(data.date)}
           </time>
-          <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider">
+          
+          {/* Real-time Indicator: JWST link active */}
+          <div 
+            id="hero-jwst-indicator"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-950/70 border border-emerald-500/35 text-[9px] font-mono font-semibold text-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.15)]"
+          >
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
+            </span>
+            <span className="uppercase tracking-wider">JWST link active</span>
+          </div>
+
+          <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider hidden md:inline">
             {isVideo ? 'Astronomy Video Stream' : 'Deep Space Imagery'}
           </span>
         </div>
 
-        {/* Action Controls: Favorite, Share, Download */}
+        {/* Action Controls: Favorite, Fullscreen, Share, Download */}
         <div className="flex items-center gap-2">
           <button
             id="hero-toggle-favorite-btn"
@@ -132,6 +193,19 @@ export default function ApodHero({
             <Star size={13} className={isFavorite ? 'fill-[#050608]' : ''} aria-hidden="true" />
             <span className="hidden sm:inline">{isFavorite ? 'Saved' : 'Favorite'}</span>
           </button>
+
+          {!isVideo && (
+            <button
+              id="hero-fullscreen-btn"
+              type="button"
+              onClick={handleToggleFullscreen}
+              aria-label={isFullscreen ? "Exit full-screen mode" : "Enter full-screen mode"}
+              title={isFullscreen ? "Exit Full-Screen" : "Full-Screen Mode"}
+              className="p-2 text-slate-400 hover:text-[#E4A853] bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#E4A853]/50"
+            >
+              {isFullscreen ? <Minimize2 size={15} aria-hidden="true" /> : <Maximize2 size={15} aria-hidden="true" />}
+            </button>
+          )}
 
           <button
             id="hero-share-telemetry-btn"
@@ -157,8 +231,13 @@ export default function ApodHero({
         </div>
       </header>
 
-      {/* Main Visual Display: Image Stage or Video Frame with Blur-up/Progressive Rendering */}
-      <section className="relative mb-8 rounded-xl overflow-hidden bg-black/60 border border-white/10 shadow-inner group">
+      {/* Main Visual Display: Image Stage or Video Frame with Tap-to-Zoom & Full-Screen */}
+      <section 
+        ref={stageRef}
+        className={`relative mb-6 rounded-xl overflow-hidden bg-black/80 border border-white/10 shadow-inner group ${
+          isFullscreen ? 'flex items-center justify-center p-4 bg-black min-h-screen' : ''
+        }`}
+      >
         {isVideo ? (
           <div className="aspect-video w-full">
             <iframe
@@ -197,9 +276,9 @@ export default function ApodHero({
                   decoding="async"
                   onLoad={() => setImageLoaded(true)}
                   onError={() => setImageError(true)}
-                  className={`w-full h-auto max-h-[600px] object-contain transition-all duration-700 ease-out group-hover:scale-[1.02] ${
+                  className={`w-full h-auto max-h-[620px] object-contain transition-all duration-500 ease-out select-none ${
                     imageLoaded ? 'opacity-100' : 'opacity-0'
-                  }`}
+                  } ${isZoomed ? 'scale-150 cursor-zoom-out' : 'scale-100 cursor-zoom-in'}`}
                 />
               </>
             ) : (
@@ -217,6 +296,30 @@ export default function ApodHero({
               </div>
             )}
 
+            {/* Tap-to-Zoom & Fullscreen Quick Action Pills (always easily accessible) */}
+            <div className="absolute bottom-3 right-3 flex items-center gap-2 z-10 pointer-events-auto">
+              <button
+                id="hero-tap-to-zoom-btn"
+                type="button"
+                onClick={handleToggleZoom}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#050608]/85 hover:bg-[#050608] border border-[#E4A853]/40 text-[#E4A853] text-[11px] font-mono backdrop-blur-md shadow-lg transition-all hover:scale-105 active:scale-95 cursor-pointer"
+                title={isZoomed ? "Reset Zoom" : "Tap to Zoom in"}
+              >
+                {isZoomed ? <ZoomOut size={13} /> : <ZoomIn size={13} />}
+                <span>{isZoomed ? 'Reset Zoom' : 'Tap to Zoom'}</span>
+              </button>
+
+              <button
+                id="hero-fullscreen-pill-btn"
+                type="button"
+                onClick={handleToggleFullscreen}
+                className="p-1.5 rounded-full bg-[#050608]/85 hover:bg-[#050608] border border-[#E4A853]/40 text-[#E4A853] text-[11px] font-mono backdrop-blur-md shadow-lg transition-all hover:scale-105 active:scale-95 cursor-pointer"
+                title={isFullscreen ? "Exit Fullscreen" : "Full-Screen Mode"}
+              >
+                {isFullscreen ? <Minimize2 size={13} /> : <Maximize2 size={13} />}
+              </button>
+            </div>
+
             {/* Hover Fullscreen HUD Overlay Indicator */}
             <div
               aria-hidden="true"
@@ -224,12 +327,26 @@ export default function ApodHero({
             >
               <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-[#0C0E12]/90 border border-[#E4A853]/50 text-[#E4A853] text-xs font-mono backdrop-blur-md shadow-xl">
                 <Maximize2 size={14} />
-                <span>Open Full HD Viewer</span>
+                <span>Open Full HD Modal</span>
               </div>
             </div>
           </div>
         )}
       </section>
+
+      {/* Scroll Cue: Guides users down into the astronomical analysis below */}
+      <div className="flex justify-center -mt-2 mb-6">
+        <button
+          id="hero-scroll-cue-btn"
+          type="button"
+          onClick={() => analysisRef.current?.scrollIntoView({ behavior: 'smooth' })}
+          className="group inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/[0.03] hover:bg-[#E4A853]/10 border border-white/10 hover:border-[#E4A853]/40 text-slate-400 hover:text-[#E4A853] text-[10px] font-mono uppercase tracking-wider transition-all duration-300 cursor-pointer shadow-sm active:scale-95"
+          aria-label="Scroll down to read astronomical analysis and details"
+        >
+          <span>Scroll for Astronomical Analysis</span>
+          <ChevronDown size={12} className="animate-bounce text-[#E4A853]" />
+        </button>
+      </div>
 
       {/* Title & Observational Metadata */}
       <footer className="space-y-4">
@@ -245,7 +362,7 @@ export default function ApodHero({
         </div>
 
         {/* Detailed Astronomical Analysis */}
-        <div className="pt-2 border-t border-white/5 space-y-2">
+        <div ref={analysisRef} className="pt-4 border-t border-white/5 space-y-2">
           <div className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-widest text-[#E4A853] font-semibold">
             <Sparkles size={12} aria-hidden="true" />
             <span>Astronomical Analysis</span>
