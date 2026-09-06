@@ -1,7 +1,14 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Search, Grid, Eye, Shuffle, Star, ExternalLink, Calendar, Heart, Video, Image, ArrowUpDown, X, Download, Sparkles } from 'lucide-react';
+import { Search, Grid, Eye, Shuffle, Star, ExternalLink, Calendar, Heart, Video, Image, ArrowUpDown, X, Download, Sparkles, Compass, Layers } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import ConstellationLoader from './ConstellationLoader';
+import { 
+  getEasternDate, 
+  addDays, 
+  formatDate, 
+  parseMaxDateFromMessage, 
+  isDateUnavailableError 
+} from '../utils/dateUtils';
 
 interface ApodData {
   title: string;
@@ -22,35 +29,6 @@ interface DiscoverProps {
 
 const NASA_API_KEY = process.env.NASA_API_KEY || "DQyanRGtyfc3NAXvp1c69yTUBiEUt32RISDWcajH";
 
-const formatDate = (dateString: string) => {
-  if (!dateString) return '';
-  const [year, month, day] = dateString.split('-');
-  return `${day}/${month}/${year}`;
-};
-
-const parseMaxDateFromMessage = (msg: string): string | null => {
-  const isoMatch = msg.match(/and\s+(\d{4}-\d{2}-\d{2})/i) || msg.match(/between\s+\d{4}-\d{2}-\d{2}\s+and\s+(\d{4}-\d{2}-\d{2})/i);
-  if (isoMatch) {
-    return isoMatch[1];
-  }
-
-  const match = msg.match(/and\s+([A-Za-z]+)\s+(\d+),\s+(\d+)/);
-  if (match) {
-    const [_, monthStr, dayStr, yearStr] = match;
-    const months: { [key: string]: string } = {
-      jan: '01', feb: '02', mar: '03', apr: '04', may: '05', jun: '06',
-      jul: '07', aug: '08', sep: '09', oct: '10', nov: '11', dec: '12'
-    };
-    const month = months[monthStr.substring(0, 3).toLowerCase()];
-    if (month) {
-      const day = dayStr.padStart(2, '0');
-      const year = yearStr;
-      return `${year}-${month}-${day}`;
-    }
-  }
-  return null;
-};
-
 export default function Discover({ favorites, onToggleFavorite, isFavorite, onSelectImage }: DiscoverProps) {
   const [gallery, setGallery] = useState<ApodData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -69,11 +47,9 @@ export default function Discover({ favorites, onToggleFavorite, isFavorite, onSe
       let url = '';
 
       if (feedMode === 'recent') {
-        const now = new Date();
-        const endDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-        const startDateObj = new Date(now);
-        startDateObj.setDate(startDateObj.getDate() - 30);
-        const startDate = `${startDateObj.getFullYear()}-${String(startDateObj.getMonth() + 1).padStart(2, '0')}-${String(startDateObj.getDate()).padStart(2, '0')}`;
+        const easternToday = getEasternDate();
+        const endDate = easternToday;
+        const startDate = addDays(easternToday, -30);
         url = `https://api.nasa.gov/planetary/apod?api_key=${NASA_API_KEY}&start_date=${startDate}&end_date=${endDate}`;
       } else {
         url = `https://api.nasa.gov/planetary/apod?api_key=${NASA_API_KEY}&count=24`;
@@ -98,60 +74,24 @@ export default function Discover({ favorites, onToggleFavorite, isFavorite, onSe
       setGallery(items);
     } catch (err: any) {
       const errMsg = err.message || 'Failed to connect to NASA servers';
-      const isDateLimitError = feedMode === 'recent' && (
-        errMsg.toLowerCase().includes('date must be') || 
-        errMsg.toLowerCase().includes('future') || 
-        errMsg.toLowerCase().includes('400') || 
-        errMsg.toLowerCase().includes('bad request')
-      );
+      const isDateLimitError = feedMode === 'recent' && isDateUnavailableError(errMsg);
       
       if (isDateLimitError) {
-        let maxDateStr = parseMaxDateFromMessage(errMsg);
-        
-        const now = new Date();
-        const getAdjustedDateStr = (date: Date) => {
-          return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-        };
+        const maxDateStr = parseMaxDateFromMessage(errMsg);
+        const easternToday = getEasternDate();
+        const fallbackEnd = maxDateStr || addDays(easternToday, -1);
+        const fallbackStart = addDays(fallbackEnd, -30);
 
-        const addDaysToObj = (d: Date, days: number) => {
-          const res = new Date(d);
-          res.setDate(res.getDate() + days);
-          return res;
-        };
-
-        if (maxDateStr) {
-          console.warn('Discover gallery date limit reached. Self-correcting range to end on:', maxDateStr);
-          const maxDateObj = new Date(maxDateStr + 'T00:00:00');
-          const startDateObj = new Date(maxDateObj);
-          startDateObj.setDate(startDateObj.getDate() - 30);
-          const startDate = getAdjustedDateStr(startDateObj);
-          
-          try {
-            const retryRes = await fetch(`https://api.nasa.gov/planetary/apod?api_key=${NASA_API_KEY}&start_date=${startDate}&end_date=${maxDateStr}`);
-            if (retryRes.ok) {
-              const retryData = await retryRes.json();
-              setGallery(Array.isArray(retryData) ? retryData : [retryData]);
-              return;
-            }
-          } catch (retryErr) {
-            console.warn('Adjusted gallery fetch retry failed:', retryErr);
+        console.warn(`Gallery date limit reached. Adjusting window to end at ${fallbackEnd}`);
+        try {
+          const retryRes = await fetch(`https://api.nasa.gov/planetary/apod?api_key=${NASA_API_KEY}&start_date=${fallbackStart}&end_date=${fallbackEnd}`);
+          if (retryRes.ok) {
+            const retryData = await retryRes.json();
+            setGallery(Array.isArray(retryData) ? retryData : [retryData]);
+            return;
           }
-        } else {
-          const yesterdayObj = addDaysToObj(now, -1);
-          const yesterdayStr = getAdjustedDateStr(yesterdayObj);
-          const startObj = addDaysToObj(yesterdayObj, -30);
-          const startStr = getAdjustedDateStr(startObj);
-
-          try {
-            const retryRes = await fetch(`https://api.nasa.gov/planetary/apod?api_key=${NASA_API_KEY}&start_date=${startStr}&end_date=${yesterdayStr}`);
-            if (retryRes.ok) {
-              const retryData = await retryRes.json();
-              setGallery(Array.isArray(retryData) ? retryData : [retryData]);
-              return;
-            }
-          } catch (retryErr) {
-            console.warn('1-day gallery fetch retry failed:', retryErr);
-          }
+        } catch (retryErr) {
+          console.warn('Adjusted gallery fetch retry failed:', retryErr);
         }
       }
       
@@ -191,72 +131,108 @@ export default function Discover({ favorites, onToggleFavorite, isFavorite, onSe
   return (
     <div className="space-y-10 animate-fade-in pb-16 relative">
       {/* Visual background atmospheric flare */}
-      <div className="absolute top-0 right-1/4 w-80 h-80 bg-[#C18A4A]/3 blur-[120px] rounded-full pointer-events-none -z-10" />
+      <div className="absolute top-0 right-1/4 w-96 h-96 bg-[#E4A853]/5 blur-[140px] rounded-full pointer-events-none -z-10" />
 
-      {/* Header section */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div>
-          <h2 className="text-4xl md:text-5xl font-serif font-semibold tracking-tight text-slate-100 leading-none">
-            Voyage <span className="italic font-light text-[#E4A853]">Galactic Gallery</span>
-          </h2>
-          <p className="text-slate-400 mt-3 text-sm md:text-base font-light font-sans tracking-wide">
-            Explore NASA's deep-space archives in grid view, search celestial phenomena, and discover historical imagery.
-          </p>
-        </div>
+      {/* Hero Header Section for Voyage Galactic Gallery */}
+      <div className="relative rounded-2xl border border-[#E4A853]/25 bg-[#0C0E12]/90 backdrop-blur-xl p-8 md:p-10 shadow-[0_15px_40px_rgba(0,0,0,0.6)] overflow-hidden">
+        {/* Optical JWST Corner Reticle Accents */}
+        <div className="absolute top-3 left-3 w-4 h-4 border-l-2 border-t-2 border-[#E4A853]/60 pointer-events-none" />
+        <div className="absolute top-3 right-3 w-4 h-4 border-r-2 border-t-2 border-[#E4A853]/60 pointer-events-none" />
+        <div className="absolute bottom-3 left-3 w-4 h-4 border-l-2 border-b-2 border-[#E4A853]/60 pointer-events-none" />
+        <div className="absolute bottom-3 right-3 w-4 h-4 border-r-2 border-b-2 border-[#E4A853]/60 pointer-events-none" />
 
-        {/* Premium Feed Mode & Layout Toggle */}
-        <div className="flex flex-wrap items-center gap-3 self-start md:self-auto relative z-10">
-          <div className="flex items-center gap-1 bg-[#050608] border border-white/5 p-1 rounded-full">
-            <button
-              onClick={() => setGridColumns('grid2x2')}
-              title="2x2 Grid View"
-              className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-mono font-bold transition-all cursor-pointer ${
-                gridColumns === 'grid2x2'
-                  ? 'bg-[#E4A853]/20 text-[#E4A853] border border-[#E4A853]/30'
-                  : 'text-slate-500 hover:text-slate-300'
-              }`}
-            >
-              <Grid size={13} />
-              <span>2x2 Grid</span>
-            </button>
-            <button
-              onClick={() => setGridColumns('grid4x4')}
-              title="Compact Grid View (4 Columns)"
-              className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-mono font-bold transition-all cursor-pointer ${
-                gridColumns === 'grid4x4'
-                  ? 'bg-[#E4A853]/20 text-[#E4A853] border border-[#E4A853]/30'
-                  : 'text-slate-500 hover:text-slate-300'
-              }`}
-            >
-              <Eye size={13} />
-              <span>4 Col</span>
-            </button>
+        {/* Subtle background cosmic grid overlay */}
+        <div className="absolute inset-0 pointer-events-none opacity-20 bg-[radial-gradient(#E4A853_1px,transparent_1px)] [background-size:32px_32px]" />
+
+        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-8">
+          <div className="max-w-2xl space-y-4">
+            {/* Status Telemetry Pill */}
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#050608] border border-[#E4A853]/30 text-[10px] font-mono font-semibold uppercase tracking-widest text-[#E4A853]">
+              <span className="w-2 h-2 rounded-full bg-[#E4A853] animate-pulse" />
+              <span>NASA Deep-Space Telemetry • Voyage Array</span>
+            </div>
+
+            <h2 className="text-4xl md:text-5xl lg:text-6xl font-serif font-semibold tracking-tight text-slate-100 leading-tight">
+              Voyage <span className="italic font-light text-[#E4A853]">Galactic Gallery</span>
+            </h2>
+
+            <p className="text-slate-300 text-base md:text-lg font-light font-sans tracking-wide leading-relaxed">
+              Explore NASA's deep-space archives in grid view, search celestial phenomena, and discover historical imagery.
+            </p>
+
+            {/* Quick Stats Badges */}
+            <div className="pt-2 flex flex-wrap items-center gap-4 text-xs font-mono text-slate-400">
+              <div className="flex items-center gap-1.5 px-3 py-1 bg-white/5 rounded-md border border-white/5">
+                <Sparkles size={12} className="text-[#E4A853]" />
+                <span>30+ Curated Coordinates</span>
+              </div>
+              <div className="flex items-center gap-1.5 px-3 py-1 bg-white/5 rounded-md border border-white/5">
+                <Compass size={12} className="text-[#E4A853]" />
+                <span>1995–Present Index</span>
+              </div>
+              <div className="flex items-center gap-1.5 px-3 py-1 bg-white/5 rounded-md border border-white/5">
+                <Layers size={12} className="text-[#E4A853]" />
+                <span>2x2 & 4-Col Grid Modes</span>
+              </div>
+            </div>
           </div>
 
-          <div className="flex items-center gap-1.5 bg-[#0C0E12] border border-white/5 p-1 rounded-full shadow-lg">
-            <button
-              onClick={() => setFeedMode('recent')}
-              className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all duration-300 cursor-pointer active:scale-95 select-none ${
-                feedMode === 'recent' 
-                  ? 'bg-[#E4A853] text-[#050608] shadow-[0_4px_15px_rgba(228,168,83,0.3)]' 
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              <Calendar size={11} />
-              Recent Array
-            </button>
-            
-            <button
-              onClick={() => setFeedMode('random')}
-              className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all duration-300 cursor-pointer active:scale-95 select-none ${
-                feedMode === 'random' 
-                  ? 'bg-[#E4A853] text-[#050608] shadow-[0_4px_15px_rgba(228,168,83,0.3)]' 
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              <Shuffle size={11} />
-              Random Coordinates
-            </button>
+          {/* Premium Feed Mode & Layout Toggle Dock inside Hero */}
+          <div className="flex flex-col sm:flex-row lg:flex-col xl:flex-row items-start sm:items-center lg:items-end xl:items-center gap-3 self-start lg:self-center relative z-10 shrink-0">
+            {/* Grid Layout Switcher */}
+            <div className="flex items-center gap-1 bg-[#050608] border border-white/10 p-1.5 rounded-full shadow-inner">
+              <button
+                onClick={() => setGridColumns('grid2x2')}
+                title="2x2 Grid View"
+                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[10px] font-mono font-bold transition-all cursor-pointer ${
+                  gridColumns === 'grid2x2'
+                    ? 'bg-[#E4A853]/25 text-[#E4A853] border border-[#E4A853]/40 shadow-[0_0_12px_rgba(228,168,83,0.2)]'
+                    : 'text-slate-500 hover:text-slate-300'
+                }`}
+              >
+                <Grid size={13} />
+                <span>2x2 Grid</span>
+              </button>
+              <button
+                onClick={() => setGridColumns('grid4x4')}
+                title="Compact Grid View (4 Columns)"
+                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[10px] font-mono font-bold transition-all cursor-pointer ${
+                  gridColumns === 'grid4x4'
+                    ? 'bg-[#E4A853]/25 text-[#E4A853] border border-[#E4A853]/40 shadow-[0_0_12px_rgba(228,168,83,0.2)]'
+                    : 'text-slate-500 hover:text-slate-300'
+                }`}
+              >
+                <Eye size={13} />
+                <span>4 Col</span>
+              </button>
+            </div>
+
+            {/* Array Feed Mode Switcher */}
+            <div className="flex items-center gap-1.5 bg-[#050608] border border-white/10 p-1.5 rounded-full shadow-lg">
+              <button
+                onClick={() => setFeedMode('recent')}
+                className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all duration-300 cursor-pointer active:scale-95 select-none ${
+                  feedMode === 'recent' 
+                    ? 'bg-[#E4A853] text-[#050608] shadow-[0_4px_15px_rgba(228,168,83,0.35)]' 
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <Calendar size={11} />
+                Recent Array
+              </button>
+              
+              <button
+                onClick={() => setFeedMode('random')}
+                className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all duration-300 cursor-pointer active:scale-95 select-none ${
+                  feedMode === 'random' 
+                    ? 'bg-[#E4A853] text-[#050608] shadow-[0_4px_15px_rgba(228,168,83,0.35)]' 
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <Shuffle size={11} />
+                Random Coordinates
+              </button>
+            </div>
           </div>
         </div>
       </div>

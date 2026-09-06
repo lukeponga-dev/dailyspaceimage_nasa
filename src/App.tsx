@@ -9,6 +9,8 @@ import Layout from './components/Layout';
 import ErrorBoundary from './components/ErrorBoundary';
 import Discover from './components/Discover';
 import Favorites from './components/Favorites';
+import LandingPage from './components/LandingPage';
+import { getEasternDate } from './utils/dateUtils';
 
 interface ApodData {
   title: string;
@@ -20,17 +22,9 @@ interface ApodData {
   hdurl?: string;
 }
 
-const getLocalDate = () => {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const day = String(now.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-};
-
 export default function App() {
-  const [currentView, setCurrentView] = useState('today');
-  const [selectedDate, setSelectedDate] = useState<string>(getLocalDate());
+  const [currentView, setCurrentView] = useState('landing');
+  const [selectedDate, setSelectedDate] = useState<string>(() => getEasternDate());
   const [favorites, setFavorites] = useState<ApodData[]>(() => {
     try {
       const stored = localStorage.getItem('cosmic_favorites');
@@ -72,6 +66,14 @@ export default function App() {
 
   const renderView = () => {
     switch (currentView) {
+      case 'landing':
+        return (
+          <LandingPage 
+            onNavigate={setCurrentView}
+            favoritesCount={favorites.length}
+            onSelectDate={handleSelectDate}
+          />
+        );
       case 'today': 
         return (
           <NasaApod 

@@ -7,12 +7,13 @@ interface Props {
 }
 
 interface ModeItem {
-  id: string; // 'today' | 'discover' | 'favorites'
-  label: string; // 'Explore' | 'Voyage' | 'Saved'
+  id: string; // 'landing' | 'today' | 'discover' | 'favorites'
+  label: string; // 'Home' | 'Explore' | 'Voyage' | 'Saved'
 }
 
 export default function Navigation({ onNavigate, currentView }: Props) {
   const modes: ModeItem[] = [
+    { id: 'landing', label: 'Home' },
     { id: 'today', label: 'Explore' },
     { id: 'discover', label: 'Voyage' },
     { id: 'favorites', label: 'Saved' },
