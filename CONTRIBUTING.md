@@ -90,3 +90,19 @@ git push origin feature/my-new-feature
 4. Wait for review and feedback
 
 ---
+
+## 🧭 Areas You Can Contribute
+
+- UI/UX improvements (modal, gallery, skeletons)
+- API enhancements (caching, error handling)
+- Accessibility upgrades
+- Documentation (README, component docs)
+- Performance optimizations
+- Adding new APOD browsing features
+
+---
+
+🙌 Thanks
+
+Your contributions help make the NASA Daily Space Image Viewer better for everyone.  
+We appreciate your time, ideas, and improvements
