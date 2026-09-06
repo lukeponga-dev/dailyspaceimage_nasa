@@ -29,7 +29,6 @@ interface NasaApodProps {
   isFavorite: (date: string) => boolean;
 }
 
-const NASA_API_KEY = process.env.NASA_API_KEY || "DQyanRGtyfc3NAXvp1c69yTUBiEUt32RISDWcajH";
 
 export default function NasaApod({ selectedDate, onDateChange, onToggleFavorite, isFavorite }: NasaApodProps) {
   const [data, setData] = useState<ApodData | null>(null);
@@ -105,10 +104,10 @@ export default function NasaApod({ selectedDate, onDateChange, onToggleFavorite,
         return;
       }
 
-      // If targetDate matches today's eastern date, NASA APOD without date parameter ALWAYS returns the active published item
+      // If targetDate matches today's eastern date, APOD proxy without date parameter returns the active published item
       const url = targetDate === easternToday
-        ? `https://api.nasa.gov/planetary/apod?api_key=${NASA_API_KEY}`
-        : `https://api.nasa.gov/planetary/apod?api_key=${NASA_API_KEY}&date=${targetDate}`;
+        ? `/api/apod`
+        : `/api/apod?date=${targetDate}`;
 
       const res = await fetchWithRetry(url);
       const responseData = await res.json();

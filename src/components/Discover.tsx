@@ -27,7 +27,6 @@ interface DiscoverProps {
   onSelectImage: (date: string) => void;
 }
 
-const NASA_API_KEY = process.env.NASA_API_KEY || "DQyanRGtyfc3NAXvp1c69yTUBiEUt32RISDWcajH";
 
 export default function Discover({ favorites, onToggleFavorite, isFavorite, onSelectImage }: DiscoverProps) {
   const [gallery, setGallery] = useState<ApodData[]>([]);
@@ -50,9 +49,9 @@ export default function Discover({ favorites, onToggleFavorite, isFavorite, onSe
         const easternToday = getEasternDate();
         const endDate = easternToday;
         const startDate = addDays(easternToday, -30);
-        url = `https://api.nasa.gov/planetary/apod?api_key=${NASA_API_KEY}&start_date=${startDate}&end_date=${endDate}`;
+        url = `/api/apod?start_date=${startDate}&end_date=${endDate}`;
       } else {
-        url = `https://api.nasa.gov/planetary/apod?api_key=${NASA_API_KEY}&count=24`;
+        url = `/api/apod?count=24`;
       }
 
       const res = await fetch(url);
@@ -84,7 +83,7 @@ export default function Discover({ favorites, onToggleFavorite, isFavorite, onSe
 
         console.warn(`Gallery date limit reached. Adjusting window to end at ${fallbackEnd}`);
         try {
-          const retryRes = await fetch(`https://api.nasa.gov/planetary/apod?api_key=${NASA_API_KEY}&start_date=${fallbackStart}&end_date=${fallbackEnd}`);
+          const retryRes = await fetch(`/api/apod?start_date=${fallbackStart}&end_date=${fallbackEnd}`);
           if (retryRes.ok) {
             const retryData = await retryRes.json();
             setGallery(Array.isArray(retryData) ? retryData : [retryData]);

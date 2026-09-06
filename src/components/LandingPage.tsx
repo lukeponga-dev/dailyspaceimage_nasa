@@ -19,7 +19,6 @@ interface LandingPageProps {
   onSelectDate?: (date: string) => void;
 }
 
-const NASA_API_KEY = process.env.NASA_API_KEY || "DQyanRGtyfc3NAXvp1c69yTUBiEUt32RISDWcajH";
 
 export default function LandingPage({ onNavigate, favoritesCount, onSelectDate }: LandingPageProps) {
   const [todayData, setTodayData] = useState<ApodData | null>(null);
@@ -32,8 +31,8 @@ export default function LandingPage({ onNavigate, favoritesCount, onSelectDate }
     let active = true;
     const fetchTodaySpotlight = async () => {
       try {
-        // Querying without date parameter returns the latest active APOD publication
-        const res = await fetch(`https://api.nasa.gov/planetary/apod?api_key=${NASA_API_KEY}`);
+        // Querying /api/apod without date parameter returns the latest active APOD publication
+        const res = await fetch('/api/apod');
         if (!res.ok) throw new Error('API limit or issue');
         const data = await res.json();
         if (active) {
@@ -44,7 +43,7 @@ export default function LandingPage({ onNavigate, favoritesCount, onSelectDate }
         // Fallback using US Eastern date
         try {
           const easternStr = getEasternDate();
-          const res = await fetch(`https://api.nasa.gov/planetary/apod?api_key=${NASA_API_KEY}&date=${easternStr}`);
+          const res = await fetch(`/api/apod?date=${easternStr}`);
           if (res.ok) {
             const data = await res.json();
             if (active) {
