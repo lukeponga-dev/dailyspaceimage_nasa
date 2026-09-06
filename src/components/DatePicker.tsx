@@ -2,28 +2,34 @@
  * DatePicker Component
  * 
  * - What the component does:
- *   Provides an intuitive celestial date control console allowing users to step chronologically
- *   day-by-day, select custom dates via native ISO calendar pickers, jump immediately to today's
- *   coordinates in Eastern Time (NASA HQ), or randomize the archival timestamp across 1995–present.
+ *   Provides an intuitive celestial date control console and a full-featured Mobile Modal Calendar
+ *   with quick-jump shortcuts (Today, Previous, Next, Random, APOD Epoch 1995).
  * 
  * - Why the design change improves UX:
- *   1. Eliminates invalid API requests by constraining min date to APOD launch (1995-06-16) and max to today.
- *   2. Synchronizes timezone boundaries with NASA HQ (US Eastern Time), preventing 404s before daily release.
- *   3. Offers tactile, instant button controls for rapid archival exploration.
+ *   1. Eliminates invalid API requests by constraining bounds to APOD launch (1995-06-16) and NASA HQ Eastern Time.
+ *   2. Mobile modal calendar offers high-contrast 48px tap targets, month/year navigation, and day grid.
+ *   3. Offers persistent quick-jump triggers directly on the control bar and inside the modal.
  *   4. Displays accessible, non-blocking inline alerts (`role="alert"`) if an out-of-range date is entered.
  * 
  * - How the styling works:
  *   Constructed with obsidian card styling (`bg-[#0B0D13]/95`), gold accent borders (`border-[#E4A853]/30`),
- *   monospace typography (`font-mono`), dark color-scheme calendar inputs (`[color-scheme:dark]`),
- *   and glowing hover states (`hover:shadow-[0_0_20px_rgba(228,168,83,0.4)]`).
- * 
- * - How it fits into the NASA APOD workflow:
- *   Mounted atop `NasaApod.tsx`. When a user selects or steps a date, it fires `onDateChange`,
- *   which triggers data resolution through `fetchApodByDate` and re-renders `ApodHero`.
+ *   monospace typography (`font-mono`), smooth `motion/react` modal animations, and glowing hover states.
  */
 
-import React, { useState } from 'react';
-import { Calendar, ChevronLeft, ChevronRight, Shuffle, Clock, AlertCircle } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { 
+  Calendar as CalendarIcon, 
+  ChevronLeft, 
+  ChevronRight, 
+  Shuffle, 
+  Clock, 
+  AlertCircle, 
+  X, 
+  ChevronDown,
+  Sparkles,
+  Rocket
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import { getEasternDate, addDays, NASA_EPOCH, getRandomDate, formatDate } from '../utils/dateUtils';
 
 interface DatePickerProps {
@@ -33,27 +39,22 @@ interface DatePickerProps {
 }
 
 export default function DatePicker({ selectedDate, onDateChange, disabled = false }: DatePickerProps) {
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
   const todayStr = getEasternDate();
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setValidationError(null);
+  // Parse currently selected year and month for calendar modal state
+  const selectedYear = parseInt(selectedDate.substring(0, 4), 10) || 2026;
+  const selectedMonth = parseInt(selectedDate.substring(5, 7), 10) - 1 || 0;
 
-    if (!value) return;
+  const [viewYear, setViewYear] = useState(selectedYear);
+  const [viewMonth, setViewMonth] = useState(selectedMonth);
 
-    // Validation checks against astronomical bounds
-    if (value < NASA_EPOCH) {
-      setValidationError(`Date cannot precede APOD launch (${formatDate(NASA_EPOCH)})`);
-      return;
-    }
-
-    if (value > todayStr) {
-      setValidationError(`Date cannot be in the future relative to NASA HQ (${formatDate(todayStr)})`);
-      return;
-    }
-
-    onDateChange(value);
+  // Sync calendar view month/year when modal opens
+  const handleOpenModal = () => {
+    setViewYear(parseInt(selectedDate.substring(0, 4), 10) || 2026);
+    setViewMonth(parseInt(selectedDate.substring(5, 7), 10) - 1 || 0);
+    setIsModalOpen(true);
   };
 
   const handlePrev = () => {
@@ -83,13 +84,65 @@ export default function DatePicker({ selectedDate, onDateChange, disabled = fals
   const isAtMin = selectedDate <= NASA_EPOCH;
   const isAtMax = selectedDate >= todayStr;
 
+  // Calendar matrix calculations
+  const monthNames = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
+
+  const daysInMonth = useMemo(() => {
+    return new Date(viewYear, viewMonth + 1, 0).getDate();
+  }, [viewYear, viewMonth]);
+
+  const firstDayOfWeek = useMemo(() => {
+    return new Date(viewYear, viewMonth, 1).getDay();
+  }, [viewYear, viewMonth]);
+
+  const handleMonthChange = (delta: number) => {
+    let newMonth = viewMonth + delta;
+    let newYear = viewYear;
+    if (newMonth < 0) {
+      newMonth = 11;
+      newYear -= 1;
+    } else if (newMonth > 11) {
+      newMonth = 0;
+      newYear += 1;
+    }
+
+    // Don't navigate before 1995 or beyond current year
+    if (newYear < 1995) return;
+    const maxYear = parseInt(todayStr.substring(0, 4), 10);
+    if (newYear > maxYear) return;
+
+    setViewMonth(newMonth);
+    setViewYear(newYear);
+  };
+
+  const handleSelectDay = (day: number) => {
+    const formattedMonth = String(viewMonth + 1).padStart(2, '0');
+    const formattedDay = String(day).padStart(2, '0');
+    const isoDate = `${viewYear}-${formattedMonth}-${formattedDay}`;
+
+    if (isoDate < NASA_EPOCH) {
+      setValidationError(`Date cannot precede APOD launch (${formatDate(NASA_EPOCH)})`);
+      return;
+    }
+
+    if (isoDate > todayStr) {
+      setValidationError(`Date cannot be in the future relative to NASA HQ (${formatDate(todayStr)})`);
+      return;
+    }
+
+    setValidationError(null);
+    onDateChange(isoDate);
+    setIsModalOpen(false);
+  };
+
   return (
     <div id="apod-date-selector-root" className="w-full flex flex-col items-center gap-2.5">
       {/* 
-        Main Date Selector Command Console
-        - What it does: Houses interactive controls for chronological APOD navigation, custom date picking, random archives, and jumping to today.
-        - Why it exists: Provides an accessible, responsive, and visually cohesive control deck styled to match NASA telemetry hardware.
-        - How it fits into the workflow: Directly captures user input and triggers `onDateChange` to load celestial imagery.
+        Main Date Selector Command Console:
+        Houses [ ◀ Prev ], [ 📅 YYYY-MM-DD ▾ ] (Modal trigger), [ Next ▶ ], [ ⟳ Random ], and [ Today ]
       */}
       <div 
         id="apod-date-selector-toolbar" 
@@ -108,24 +161,21 @@ export default function DatePicker({ selectedDate, onDateChange, disabled = fals
           <ChevronLeft size={18} aria-hidden="true" />
         </button>
 
-        {/* Date Selector input console container: [ Date ▾ ] */}
-        <div 
-          id="date-selector-input-wrapper" 
-          className="relative flex items-center bg-[#050608] border border-white/15 hover:border-[#E4A853]/50 focus-within:border-[#E4A853] focus-within:ring-2 focus-within:ring-[#E4A853]/20 rounded-xl px-3 py-2 transition-all shadow-inner min-h-[44px]"
+        {/* Date Selector Display & Modal Trigger: [ 📅 2026-09-05 ▾ ] */}
+        <button
+          id="date-selector-modal-trigger-btn"
+          type="button"
+          onClick={handleOpenModal}
+          disabled={disabled}
+          className="relative flex items-center gap-2 bg-[#050608] hover:bg-[#0C0E12] border border-white/15 hover:border-[#E4A853]/50 focus:border-[#E4A853] focus:ring-2 focus:ring-[#E4A853]/20 rounded-xl px-3 sm:px-4 py-2 transition-all shadow-inner min-h-[44px] cursor-pointer text-left group/datebtn active:scale-95"
+          aria-label={`Open calendar modal to change date. Currently selected: ${selectedDate}`}
         >
-          <Calendar size={15} className="text-[#E4A853] shrink-0 mr-2 pointer-events-none" aria-hidden="true" />
-          <input
-            id="date-selector-input"
-            type="date"
-            min={NASA_EPOCH}
-            max={todayStr}
-            value={selectedDate}
-            onChange={handleInputChange}
-            disabled={disabled}
-            className="bg-transparent border-0 text-xs sm:text-sm font-mono font-semibold text-slate-100 focus:outline-none transition-colors cursor-pointer disabled:opacity-50 [color-scheme:dark] tracking-wider"
-            aria-label="Select observation date"
-          />
-        </div>
+          <CalendarIcon size={16} className="text-[#E4A853] shrink-0" aria-hidden="true" />
+          <span className="text-xs sm:text-sm font-mono font-semibold text-slate-100 group-hover/datebtn:text-[#FFD700] transition-colors tracking-wider">
+            {selectedDate}
+          </span>
+          <ChevronDown size={14} className="text-slate-400 group-hover/datebtn:text-[#E4A853] transition-colors shrink-0" />
+        </button>
 
         {/* Step to next day */}
         <button
@@ -152,7 +202,7 @@ export default function DatePicker({ selectedDate, onDateChange, disabled = fals
           title="Jump to Random Historical Observation"
           aria-label="Jump to random historical observation"
         >
-          <Shuffle size={13} aria-hidden="true" />
+          <Shuffle size={14} aria-hidden="true" />
           <span className="hidden sm:inline">Random</span>
         </button>
 
@@ -166,7 +216,7 @@ export default function DatePicker({ selectedDate, onDateChange, disabled = fals
           title="Jump to Latest Coordinates"
           aria-label="Jump to today's coordinates"
         >
-          <Clock size={13} aria-hidden="true" />
+          <Clock size={14} aria-hidden="true" />
           <span>Today</span>
         </button>
       </div>
@@ -183,6 +233,180 @@ export default function DatePicker({ selectedDate, onDateChange, disabled = fals
           <span>{validationError}</span>
         </div>
       )}
+
+      {/* =========================================================================
+          ENHANCED MOBILE MODAL CALENDAR (Interactive Month Grid & Quick-Jump Shortcuts)
+          ========================================================================= */}
+      <AnimatePresence>
+        {isModalOpen && (
+          <div 
+            id="mobile-calendar-modal-backdrop"
+            className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-xl"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="calendar-modal-title"
+          >
+            {/* Backdrop click to dismiss */}
+            <div 
+              className="absolute inset-0 cursor-pointer"
+              onClick={() => setIsModalOpen(false)}
+              aria-hidden="true"
+            />
+
+            <motion.div
+              id="calendar-modal-content"
+              initial={{ opacity: 0, scale: 0.94, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.94, y: 15 }}
+              transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+              className="relative z-10 w-full max-w-sm bg-[#0C0E12] border border-[#E4A853]/40 rounded-2xl p-5 shadow-[0_25px_70px_rgba(0,0,0,0.9)] space-y-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Modal Header: Month/Year Stepper & Close */}
+              <div className="flex items-center justify-between pb-3 border-b border-white/10">
+                <div className="flex items-center gap-2">
+                  <CalendarIcon size={16} className="text-[#E4A853]" />
+                  <h3 id="calendar-modal-title" className="font-serif font-bold text-base text-white">
+                    Select Observation
+                  </h3>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(false)}
+                  className="min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition-colors cursor-pointer"
+                  aria-label="Close calendar modal"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              {/* Month / Year Navigator */}
+              <div className="flex items-center justify-between px-1">
+                <button
+                  type="button"
+                  onClick={() => handleMonthChange(-1)}
+                  className="min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg bg-white/5 hover:bg-[#E4A853]/20 text-slate-300 hover:text-[#E4A853] border border-white/10 transition-colors cursor-pointer"
+                  aria-label="Previous month"
+                >
+                  <ChevronLeft size={16} />
+                </button>
+
+                <div className="text-center font-mono font-bold text-sm text-[#FFD700]">
+                  {monthNames[viewMonth]} {viewYear}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => handleMonthChange(1)}
+                  className="min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg bg-white/5 hover:bg-[#E4A853]/20 text-slate-300 hover:text-[#E4A853] border border-white/10 transition-colors cursor-pointer"
+                  aria-label="Next month"
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+
+              {/* Day of Week Headers */}
+              <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-mono font-semibold text-slate-400 uppercase">
+                <span>Su</span>
+                <span>Mo</span>
+                <span>Tu</span>
+                <span>We</span>
+                <span>Th</span>
+                <span>Fr</span>
+                <span>Sa</span>
+              </div>
+
+              {/* Day Matrix Grid */}
+              <div className="grid grid-cols-7 gap-1">
+                {/* Empty padding cells for first week */}
+                {Array.from({ length: firstDayOfWeek }).map((_, idx) => (
+                  <div key={`empty-${idx}`} className="h-9 w-full" />
+                ))}
+
+                {/* Day cells */}
+                {Array.from({ length: daysInMonth }).map((_, idx) => {
+                  const day = idx + 1;
+                  const formattedMonth = String(viewMonth + 1).padStart(2, '0');
+                  const formattedDay = String(day).padStart(2, '0');
+                  const cellDate = `${viewYear}-${formattedMonth}-${formattedDay}`;
+
+                  const isSelected = cellDate === selectedDate;
+                  const isToday = cellDate === todayStr;
+                  const isDisabled = cellDate < NASA_EPOCH || cellDate > todayStr;
+
+                  return (
+                    <button
+                      key={`day-${day}`}
+                      type="button"
+                      onClick={() => handleSelectDay(day)}
+                      disabled={isDisabled}
+                      className={`h-9 w-full rounded-lg text-xs font-mono font-medium flex items-center justify-center transition-all cursor-pointer border ${
+                        isSelected
+                          ? 'bg-[#E4A853] text-[#050608] border-[#E4A853] font-bold shadow-[0_0_12px_rgba(228,168,83,0.4)]'
+                          : isToday
+                          ? 'bg-[#E4A853]/15 text-[#FFD700] border-[#E4A853]/40 font-bold'
+                          : 'bg-white/[0.03] text-slate-200 border-white/5 hover:bg-white/10 hover:border-[#E4A853]/30'
+                      } ${isDisabled ? 'opacity-20 cursor-not-allowed pointer-events-none' : 'active:scale-90'}`}
+                      aria-label={`Select ${cellDate}`}
+                    >
+                      {day}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Quick-Jump Shortcut Buttons inside Modal */}
+              <div className="pt-3 border-t border-white/10 space-y-2">
+                <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider block text-left">
+                  Quick-Jump Shortcuts
+                </span>
+
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => { onDateChange(todayStr); setIsModalOpen(false); }}
+                    className="min-h-[38px] px-2.5 py-1.5 rounded-lg bg-[#E4A853] text-[#050608] font-mono font-bold text-xs flex items-center justify-center gap-1 shadow-md hover:bg-[#f3be73] active:scale-95 cursor-pointer"
+                  >
+                    <Clock size={12} />
+                    <span>Today</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => { onDateChange(addDays(selectedDate, -1)); setIsModalOpen(false); }}
+                    className="min-h-[38px] px-2.5 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-slate-200 font-mono text-xs flex items-center justify-center gap-1 active:scale-95 cursor-pointer"
+                  >
+                    <ChevronLeft size={12} />
+                    <span>Previous</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => { onDateChange(getRandomDate(todayStr)); setIsModalOpen(false); }}
+                    className="min-h-[38px] px-2.5 py-1.5 rounded-lg bg-white/5 hover:bg-[#E4A853]/20 border border-[#E4A853]/30 text-[#E4A853] font-mono text-xs flex items-center justify-center gap-1 active:scale-95 cursor-pointer"
+                  >
+                    <Shuffle size={12} />
+                    <span>Random</span>
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-between text-[10px] font-mono text-slate-400 pt-1">
+                  <span>Epoch: {NASA_EPOCH}</span>
+                  <button
+                    type="button"
+                    onClick={() => { onDateChange(NASA_EPOCH); setIsModalOpen(false); }}
+                    className="text-[#E4A853] hover:underline cursor-pointer"
+                  >
+                    First APOD (1995)
+                  </button>
+                </div>
+              </div>
+
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

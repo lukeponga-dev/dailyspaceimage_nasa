@@ -1,5 +1,6 @@
 import React from 'react';
 import Navigation from './Navigation';
+import AmbientStarfield from './AmbientStarfield';
 import { motion } from 'motion/react';
 import { Sparkles, Compass, Radio } from 'lucide-react';
 import jwstGoldEmblem from '../assets/images/jwst_gold_emblem_1787854317963.jpg';
@@ -31,6 +32,9 @@ export default function Layout({ children, currentView, onNavigate }: LayoutProp
   return (
     <div className="min-h-screen bg-[#050608] text-slate-100 flex flex-col items-center pt-3 sm:pt-5 pb-6 px-3 sm:px-6 relative overflow-hidden">
       
+      {/* Dynamic Ambient Cosmic Starfield Canvas Animation */}
+      <AmbientStarfield />
+
       {/* Background radial gold dust glow & deep space ambient star field */}
       <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[900px] h-[450px] bg-[#E4A853]/6 blur-[140px] rounded-[100%] pointer-events-none -z-10" />
       <div className="fixed inset-0 pointer-events-none -z-10 opacity-30 bg-[radial-gradient(#E4A853_1px,transparent_1px)] [background-size:48px_48px]" />

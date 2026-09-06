@@ -375,7 +375,7 @@ export default function Gallery({
                       onClick={() => setActiveModalItem(item)}
                       className="text-slate-400 hover:text-slate-200 transition-colors cursor-pointer focus:outline-none focus:underline"
                     >
-                      Inspect HD →
+                      Inspect HD
                     </button>
                   </div>
                 </div>

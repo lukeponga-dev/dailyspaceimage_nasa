@@ -4,45 +4,42 @@
  * - What the component does:
  *   Renders the primary focal showcase for NASA's Astronomy Picture of the Day.
  *   Displays the high-resolution celestial photograph or video embed, along with
- *   astronomical observation date, author copyright credits, curated analysis,
- *   and interactive controls for favoriting, sharing, downloading, and launching the HD modal viewer.
+ *   tap-to-zoom magnification, persistent action controls (★ Save, ⟳ Random, Share, Download),
+ *   scroll guidance cues, stacked scientific summary cards (Key Insight, Scientific Notes, Mission Context),
+ *   and live animated telemetry metrics.
  * 
  * - Why the design change improves UX:
  *   1. Eliminates layout shifts (CLS) by utilizing responsive aspect constraints and fallback stages.
- *   2. Provides tactile visual feedback with optical reticle corner accents and gold telemetry badges,
- *      giving users the sensation of operating a deep-space observatory console.
- *   3. Supports full keyboard navigation (Space/Enter triggers HD modal, interactive focus rings).
- *   4. Safely accommodates both video streams (YouTube/Vimeo embeds) and high-res imagery without UI breakage.
+ *   2. Tap-to-zoom and click-to-open HD modal allow immediate full-screen inspection of deep-space photography.
+ *   3. Persistent inline and sticky thumb-reach action bars ensure the "★ Save" and "⟳ Random" buttons are always accessible.
+ *   4. Animated scroll cue guides mobile users seamlessly into the scientific breakdown.
+ *   5. Real-time animated telemetry with multi-ring radar pulse and ambient data flow.
  * 
  * - How the styling works:
- *   Built using Tailwind CSS utilities with a dark obsidian palette (`bg-[#0C0E12]/90`),
+ *   Built using Tailwind CSS utilities with a dark obsidian palette (`bg-[#0C0E12]/95`),
  *   subtle stardust backdrop blur (`backdrop-blur-xl`), gold accent borders (`border-[#E4A853]/25`),
  *   and responsive typography pairing Playfair Display (headings) with Plus Jakarta Sans (body).
- * 
- * - How it fits into the NASA APOD workflow:
- *   Receives normalized `ApodData` from `NasaApod.tsx` (fetched via `/api/apod` or cached storage).
- *   Acts as the primary presentation layer when users browse daily or historical astronomical entries.
  */
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { 
-  Maximize2, 
-  Minimize2, 
-  Download, 
-  Share2, 
-  Star, 
-  Sparkles, 
-  AlertTriangle, 
-  ExternalLink,
-  ZoomIn,
-  ZoomOut,
-  ChevronDown,
-  Shuffle,
-  BookOpen,
-  ListFilter,
-  Radio,
-  Compass,
-  Cpu
+  Maximize2 as MaximizeIcon, 
+  Minimize2 as MinimizeIcon, 
+  Download as DownloadIcon, 
+  Share2 as ShareIcon, 
+  Star as StarIcon, 
+  Sparkles as SparklesIcon, 
+  AlertTriangle as AlertTriangleIcon, 
+  ExternalLink as ExternalLinkIcon,
+  ZoomIn as ZoomInIcon,
+  ZoomOut as ZoomOutIcon,
+  ChevronDown as ChevronDownIcon,
+  Shuffle as ShuffleIcon,
+  BookOpen as BookOpenIcon,
+  ListFilter as ListFilterIcon,
+  Compass as CompassIcon,
+  Activity as ActivityIcon,
+  Radio as RadioIcon
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { ApodData } from '../types';
@@ -176,9 +173,9 @@ export default function ApodHero({
       </div>
 
       {/* =========================================================================
-          4. PRIMARY IMAGE (Mobile Optimized)
+          1. TAP-TO-ZOOM / FULL-SCREEN IMAGE VIEWER
           - 100% width, auto height
-          - Tap-to-zoom opens full-screen viewer or toggles magnification
+          - Tap-to-zoom opens full-screen viewer or toggles in-place magnification
           - Reachable zoom pill
           ========================================================================= */}
       <section 
@@ -231,7 +228,7 @@ export default function ApodHero({
               </>
             ) : (
               <div className="p-10 text-center text-slate-400 space-y-3">
-                <AlertTriangle className="mx-auto text-amber-400" size={32} aria-hidden="true" />
+                <AlertTriangleIcon className="mx-auto text-amber-400" size={32} aria-hidden="true" />
                 <p className="text-sm font-mono text-slate-300">Image stream unavailable</p>
                 <a
                   href={data.hdurl || data.url}
@@ -239,12 +236,12 @@ export default function ApodHero({
                   rel="noopener noreferrer"
                   className="text-xs text-[#E4A853] hover:underline inline-flex items-center gap-1.5 font-mono"
                 >
-                  Direct NASA Source Link <ExternalLink size={12} aria-hidden="true" />
+                  Direct NASA Source Link <ExternalLinkIcon size={12} aria-hidden="true" />
                 </a>
               </div>
             )}
 
-            {/* Tap-to-Zoom & Fullscreen Quick Action Pills (always easily accessible) */}
+            {/* Tap-to-Zoom & Fullscreen Quick Action Pills */}
             <div className="absolute bottom-3 right-3 flex items-center gap-2 z-10 pointer-events-auto">
               <button
                 id="hero-tap-to-zoom-btn"
@@ -253,8 +250,8 @@ export default function ApodHero({
                 className="min-h-[38px] flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#050608]/90 hover:bg-[#050608] border border-[#E4A853]/50 text-[#E4A853] text-[11px] font-mono backdrop-blur-md shadow-lg transition-all active:scale-95 cursor-pointer"
                 title={isZoomed ? "Reset Zoom" : "Tap to Zoom in"}
               >
-                {isZoomed ? <ZoomOut size={13} /> : <ZoomIn size={13} />}
-                <span>{isZoomed ? 'Reset Zoom' : 'Tap to Zoom 🔍'}</span>
+                {isZoomed ? <ZoomOutIcon size={13} /> : <ZoomInIcon size={13} />}
+                <span>{isZoomed ? 'Reset Zoom' : 'Tap to Zoom'}</span>
               </button>
 
               <button
@@ -264,7 +261,7 @@ export default function ApodHero({
                 className="min-h-[38px] min-w-[38px] flex items-center justify-center rounded-full bg-[#050608]/90 hover:bg-[#050608] border border-[#E4A853]/50 text-[#E4A853] text-[11px] font-mono backdrop-blur-md shadow-lg transition-all active:scale-95 cursor-pointer"
                 title={isFullscreen ? "Exit Fullscreen" : "Full-Screen Mode"}
               >
-                {isFullscreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+                {isFullscreen ? <MinimizeIcon size={14} /> : <MaximizeIcon size={14} />}
               </button>
             </div>
 
@@ -274,7 +271,7 @@ export default function ApodHero({
               className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center pointer-events-none"
             >
               <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-[#0C0E12]/90 border border-[#E4A853]/50 text-[#E4A853] text-xs font-mono backdrop-blur-md shadow-xl">
-                <Maximize2 size={14} />
+                <MaximizeIcon size={14} />
                 <span>Open Full HD Modal</span>
               </div>
             </div>
@@ -282,25 +279,29 @@ export default function ApodHero({
         )}
       </section>
 
-      {/* Scroll Cue: Guides users down into the stacked summary cards */}
+      {/* =========================================================================
+          4. SCROLL CUE UNDER HERO SECTION
+          - Prominent animated scroll indicator with bouncing chevron
+          - Smoothly scrolls viewport to the scientific cards and telemetry
+          ========================================================================= */}
       <div className="flex justify-center -my-1">
         <button
           id="hero-scroll-cue-btn"
           type="button"
           onClick={() => summaryRef.current?.scrollIntoView({ behavior: 'smooth' })}
-          className="group inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/[0.03] hover:bg-[#E4A853]/10 border border-white/10 hover:border-[#E4A853]/40 text-slate-400 hover:text-[#E4A853] text-[10px] font-mono uppercase tracking-wider transition-all duration-300 cursor-pointer shadow-sm active:scale-95"
+          className="group inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#050608]/90 hover:bg-[#0C0E12] border border-[#E4A853]/35 hover:border-[#E4A853] text-[#E4A853] text-xs font-mono tracking-wider transition-all duration-300 cursor-pointer shadow-[0_4px_20px_rgba(0,0,0,0.8),0_0_15px_rgba(228,168,83,0.15)] active:scale-95"
           aria-label="Scroll down to read scientific summary cards"
         >
-          <span>Scroll to Discover</span>
-          <ChevronDown size={12} className="animate-bounce text-[#E4A853]" />
+          <span className="font-semibold">Scroll to Discover</span>
+          <ChevronDownIcon size={14} className="animate-bounce text-[#FFD700]" />
         </button>
       </div>
 
       {/* =========================================================================
-          5. IMAGE TITLE + QUICK ACTIONS
-          - Inline actions for thumb reach
-          - Star icon toggles saved state
-          - Randomizer boosts engagement
+          2. PERSISTENT INLINE ACTION BAR & TITLE
+          - Save button (toggles saved state with gold glow)
+          - Random Image button
+          - Share and Download actions within thumb reach
           ========================================================================= */}
       <section id="hero-title-actions-section" className="space-y-3 pt-2">
         <h1 className="text-xl sm:text-2xl md:text-3xl font-serif font-bold text-white tracking-tight leading-snug">
@@ -308,34 +309,36 @@ export default function ApodHero({
         </h1>
 
         {/* Inline Quick Action Buttons for Thumb Reach */}
-        <div className="flex flex-wrap items-center gap-2 pt-1">
-          {/* ★ Save / Saved Button */}
+        <div className="flex flex-wrap items-center gap-2.5 pt-1">
+          {/* Save / Saved Button */}
           <button
             id="hero-toggle-favorite-btn"
             type="button"
             onClick={() => onToggleFavorite(data)}
             aria-label={isFavorite ? `Remove ${data.title} from favorites` : `Add ${data.title} to favorites`}
-            className={`min-h-[44px] flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-mono transition-all cursor-pointer border active:scale-95 focus:outline-none focus:ring-2 focus:ring-[#E4A853]/50 ${
+            className={`min-h-[46px] flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-mono transition-all cursor-pointer border active:scale-95 focus:outline-none focus:ring-2 focus:ring-[#E4A853] ${
               isFavorite
-                ? 'bg-[#E4A853] text-[#050608] border-[#E4A853] font-bold shadow-[0_0_15px_rgba(228,168,83,0.3)]'
-                : 'bg-white/5 hover:bg-white/10 text-slate-200 border-white/15 hover:border-[#E4A853]/40'
+                ? 'bg-[#E4A853] text-[#050608] border-[#E4A853] font-bold shadow-[0_0_20px_rgba(228,168,83,0.4)]'
+                : 'bg-white/5 hover:bg-white/10 text-slate-100 border-white/20 hover:border-[#E4A853]/60'
             }`}
           >
-            <Star size={14} className={isFavorite ? 'fill-[#050608]' : ''} aria-hidden="true" />
-            <span>{isFavorite ? '★ Saved' : '★ Save'}</span>
+            <StarIcon size={16} className={isFavorite ? 'fill-[#050608]' : 'text-[#E4A853]'} aria-hidden="true" />
+            <span className="font-semibold tracking-wide">
+              {isFavorite ? 'Saved' : 'Save'}
+            </span>
           </button>
 
-          {/* ⟳ Random Button */}
+          {/* Random Image Button */}
           {onRandom && (
             <button
               id="hero-random-btn"
               type="button"
               onClick={onRandom}
               aria-label="Randomize celestial observation"
-              className="min-h-[44px] flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-mono transition-all cursor-pointer border bg-white/5 hover:bg-[#E4A853]/15 text-slate-200 hover:text-[#E4A853] border-white/15 hover:border-[#E4A853]/40 active:scale-95 focus:outline-none focus:ring-2 focus:ring-[#E4A853]/50"
+              className="min-h-[46px] flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-mono font-medium transition-all cursor-pointer border bg-white/5 hover:bg-[#E4A853]/15 text-slate-200 hover:text-[#E4A853] border-white/20 hover:border-[#E4A853]/60 active:scale-95 focus:outline-none focus:ring-2 focus:ring-[#E4A853]"
             >
-              <Shuffle size={14} aria-hidden="true" />
-              <span>⟳ Random</span>
+              <ShuffleIcon size={15} className="text-[#E4A853]" aria-hidden="true" />
+              <span>Random Image</span>
             </button>
           )}
 
@@ -345,10 +348,10 @@ export default function ApodHero({
             type="button"
             onClick={() => onShare(data)}
             aria-label="Share this astronomical observation"
-            className="min-h-[44px] min-w-[44px] flex items-center justify-center p-2 text-slate-300 hover:text-white bg-white/5 hover:bg-white/10 border border-white/15 hover:border-[#E4A853]/40 rounded-xl transition-all cursor-pointer active:scale-95 focus:outline-none focus:ring-2 focus:ring-[#E4A853]/50"
-            title="Share"
+            className="min-h-[46px] min-w-[46px] flex items-center justify-center p-2.5 text-slate-300 hover:text-white bg-white/5 hover:bg-white/10 border border-white/20 hover:border-[#E4A853]/60 rounded-xl transition-all cursor-pointer active:scale-95 focus:outline-none focus:ring-2 focus:ring-[#E4A853]"
+            title="Share observation"
           >
-            <Share2 size={15} aria-hidden="true" />
+            <ShareIcon size={16} aria-hidden="true" />
           </button>
 
           {/* Download Action (if image) */}
@@ -358,28 +361,27 @@ export default function ApodHero({
               type="button"
               onClick={handleDownload}
               aria-label="Download high-resolution image"
-              className="min-h-[44px] min-w-[44px] flex items-center justify-center p-2 text-slate-300 hover:text-white bg-white/5 hover:bg-white/10 border border-white/15 hover:border-[#E4A853]/40 rounded-xl transition-all cursor-pointer active:scale-95 focus:outline-none focus:ring-2 focus:ring-[#E4A853]/50"
+              className="min-h-[46px] min-w-[46px] flex items-center justify-center p-2.5 text-slate-300 hover:text-white bg-white/5 hover:bg-white/10 border border-white/20 hover:border-[#E4A853]/60 rounded-xl transition-all cursor-pointer active:scale-95 focus:outline-none focus:ring-2 focus:ring-[#E4A853]"
               title="Download HD Image"
             >
-              <Download size={15} aria-hidden="true" />
+              <DownloadIcon size={16} aria-hidden="true" />
             </button>
           )}
         </div>
       </section>
 
       {/* =========================================================================
-          6. SCIENTIFIC SUMMARY (Stacked Cards)
+          3. CARD-BASED SCIENTIFIC SUMMARY (Stacked Architecture)
           - Card 1: Key Insight
-          - Card 2: Scientific Notes (bullet points)
+          - Card 2: Scientific Notes (concise bullet points)
           - Card 3: Mission Context
-          - Card layout improves readability and suits mobile vertical scrolling
           ========================================================================= */}
       <section ref={summaryRef} id="hero-scientific-summary-cards" className="space-y-3 pt-2">
         
         {/* Card 1: Key Insight */}
-        <div className="p-4 rounded-xl bg-white/[0.02] border border-white/10 hover:border-[#E4A853]/30 transition-colors shadow-sm text-left">
-          <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-[#E4A853] font-bold mb-2">
-            <BookOpen size={14} className="text-[#E4A853]" aria-hidden="true" />
+        <div className="p-4 sm:p-5 rounded-xl bg-white/[0.02] border border-white/10 hover:border-[#E4A853]/40 transition-colors shadow-sm text-left space-y-2">
+          <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-[#E4A853] font-bold">
+            <BookOpenIcon size={15} className="text-[#E4A853]" aria-hidden="true" />
             <span>Key Insight</span>
           </div>
           <p className="text-slate-200 text-sm font-sans font-light leading-relaxed">
@@ -388,15 +390,15 @@ export default function ApodHero({
         </div>
 
         {/* Card 2: Scientific Notes */}
-        <div className="p-4 rounded-xl bg-white/[0.02] border border-white/10 hover:border-[#E4A853]/30 transition-colors shadow-sm text-left">
-          <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-[#E4A853] font-bold mb-2.5">
-            <ListFilter size={14} className="text-[#E4A853]" aria-hidden="true" />
+        <div className="p-4 sm:p-5 rounded-xl bg-white/[0.02] border border-white/10 hover:border-[#E4A853]/40 transition-colors shadow-sm text-left space-y-2.5">
+          <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-[#E4A853] font-bold">
+            <ListFilterIcon size={15} className="text-[#E4A853]" aria-hidden="true" />
             <span>Scientific Notes</span>
           </div>
           <ul className="space-y-2 text-xs sm:text-sm font-sans text-slate-300 font-light leading-relaxed">
             {summary.notes.map((note, idx) => (
-              <li key={idx} className="flex items-start gap-2">
-                <span className="text-[#E4A853] font-bold select-none">•</span>
+              <li key={idx} className="flex items-start gap-2.5">
+                <span className="text-[#E4A853] font-bold select-none text-base leading-none mt-0.5">•</span>
                 <span>{note}</span>
               </li>
             ))}
@@ -404,9 +406,9 @@ export default function ApodHero({
         </div>
 
         {/* Card 3: Mission Context */}
-        <div className="p-4 rounded-xl bg-white/[0.02] border border-white/10 hover:border-[#E4A853]/30 transition-colors shadow-sm text-left">
-          <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-[#E4A853] font-bold mb-2">
-            <Compass size={14} className="text-[#E4A853]" aria-hidden="true" />
+        <div className="p-4 sm:p-5 rounded-xl bg-white/[0.02] border border-white/10 hover:border-[#E4A853]/40 transition-colors shadow-sm text-left space-y-2">
+          <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-[#E4A853] font-bold">
+            <CompassIcon size={15} className="text-[#E4A853]" aria-hidden="true" />
             <span>Mission Context</span>
           </div>
           <div className="space-y-1.5 text-xs font-mono text-slate-300">
@@ -420,7 +422,7 @@ export default function ApodHero({
             </p>
             <p>
               <span className="text-slate-400">Telemetry Stream:</span>{' '}
-              <span className="text-[#E4A853]">{summary.missionContext.observationType}</span>
+              <span className="text-[#E4A853] font-medium">{summary.missionContext.observationType}</span>
             </p>
           </div>
         </div>
@@ -428,31 +430,41 @@ export default function ApodHero({
       </section>
 
       {/* =========================================================================
-          7. LIVE TELEMETRY (Compact)
-          - Pulsing dot for "active"
-          - 4-5 lines max
-          - Strictly single-column layout (no horizontal layout that breaks mobile)
+          5. TELEMETRY MOTION (Multi-ring pulsing dot & dynamic data stream)
           ========================================================================= */}
-      <section id="hero-compact-telemetry" className="p-4 rounded-xl bg-black/60 border border-emerald-500/30 text-left space-y-2 shadow-inner">
-        <div className="flex items-center gap-2">
-          <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-          </span>
-          <span className="text-xs font-mono font-bold text-emerald-400 uppercase tracking-wider">
-            Live Telemetry ● Active
-          </span>
+      <section id="hero-compact-telemetry" className="p-4 sm:p-5 rounded-xl bg-black/70 border border-emerald-500/35 text-left space-y-3 shadow-inner relative overflow-hidden">
+        {/* Ambient subtle green telemetry background flare */}
+        <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 blur-2xl rounded-full pointer-events-none" />
+
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            {/* Multi-ring Pulsing Radar Motion Indicator */}
+            <span className="relative flex h-3 w-3 shrink-0 items-center justify-center">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-80 [animation-duration:1.5s]" />
+              <span className="animate-ping absolute inline-flex h-6 w-6 rounded-full bg-emerald-500/30 opacity-50 [animation-duration:2.5s]" />
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500 shadow-[0_0_8px_#10B981]" />
+            </span>
+            <span className="text-xs font-mono font-bold text-emerald-400 uppercase tracking-wider">
+              Live Telemetry Active
+            </span>
+          </div>
+
+          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-mono text-emerald-400">
+            <ActivityIcon size={12} className="animate-pulse" />
+            <span>300 bps</span>
+          </div>
         </div>
 
-        <div className="text-xs font-mono text-slate-300 space-y-1 pl-4 border-l border-emerald-500/30">
-          <p className="text-white font-semibold">JWST (NIRCam) &amp; Deep Space Relay</p>
-          <p className="text-slate-400">Core Temp: 6.2 K • DSN Link 300bps</p>
-          <p className="text-slate-400">Archival Logs: 11,380+ Records Active</p>
+        <div className="text-xs font-mono text-slate-300 space-y-1.5 pl-4 border-l-2 border-emerald-500/40">
+          <p className="text-white font-semibold flex items-center justify-between">
+            <span>JWST (NIRCam) &amp; Deep Space Array</span>
+            <span className="text-emerald-400 text-[10px] font-normal">LOCK ESTABLISHED</span>
+          </p>
+          <p className="text-slate-400">Core Temp: <span className="text-[#FFD700] font-bold">6.2 Kelvin</span> • DSN Link 300bps Active</p>
+          <p className="text-slate-400">Archival Logs: <span className="text-slate-200 font-semibold">11,380+</span> Validated Records</p>
         </div>
       </section>
 
     </motion.article>
   );
 }
-
-

@@ -194,7 +194,11 @@ export default function LandingPage({ onNavigate, favoritesCount, onSelectDate }
                   <Globe size={11} className="animate-spin [animation-duration:12s]" />
                   Observatory Status
                 </span>
-                <span className="px-2 py-0.5 rounded bg-green-500/10 border border-green-500/20 text-[9px] font-mono uppercase tracking-widest text-green-400 font-bold">
+                <span className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-[9px] font-mono uppercase tracking-widest text-emerald-400 font-bold">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                  </span>
                   Online
                 </span>
               </div>

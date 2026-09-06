@@ -15,7 +15,7 @@ import { getEasternDate } from './utils/dateUtils';
 import { ApodData } from './types';
 
 export default function App() {
-  const [currentView, setCurrentView] = useState('landing');
+  const [currentView, setCurrentView] = useState('today');
   const [selectedDate, setSelectedDate] = useState<string>(() => getEasternDate());
   const [favorites, setFavorites] = useState<ApodData[]>(() => {
     try {
