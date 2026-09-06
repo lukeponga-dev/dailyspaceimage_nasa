@@ -77,22 +77,22 @@ App will be available at:
 
 ## Project Structure
 
-```nano
-api/
-  apod.ts
-src/
-  App.tsx
-  main.tsx
-  index.css
-  types.ts
-
-index.html  
-package.json  
-tsconfig.json  
-vite.config.ts  
-vercel.json  
-.env.example`
-```
+    api/
+      apod.ts
+    src/
+      App.tsx
+      main.tsx
+      index.css
+      types.ts
+      vite-env.d.ts
+      assets/
+         images/
+      components/
+      lib/
+       fetchApod.ts
+      utils/
+       dateUtils.ts
+      index.html
 
 ---
 
