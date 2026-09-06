@@ -1,33 +1,33 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import Navigation from './Navigation';
 import { motion } from 'motion/react';
 import { Sparkles, Compass, Radio } from 'lucide-react';
 import jwstGoldEmblem from '../assets/images/jwst_gold_emblem_1787854317963.jpg';
-import { getEasternDate, NASA_EPOCH } from '../utils/dateUtils';
 
 interface LayoutProps {
   children: React.ReactNode;
   currentView: string;
   onNavigate: (view: string) => void;
-  selectedDate: string;
-  onDateChange: (date: string) => void;
+  selectedDate?: string;
+  onDateChange?: (date: string) => void;
 }
 
-export default function Layout({ children, currentView, onNavigate, selectedDate, onDateChange }: LayoutProps) {
-  const minDate = NASA_EPOCH;
-  const todayStr = useMemo(() => {
-    return getEasternDate();
-  }, []);
-
-  const formattedDate = useMemo(() => {
-    try {
-      const d = new Date(selectedDate + 'T00:00:00');
-      return `${d.toLocaleDateString('en-US', { month: 'short' }).toUpperCase()} ${d.getDate()} ${d.getFullYear()}`;
-    } catch {
-      return selectedDate;
-    }
-  }, [selectedDate]);
-
+/**
+ * Main application shell layout.
+ * 
+ * - What it does:
+ *   Renders common chrome elements including the cosmic ambient background,
+ *   floating top navigation bar, contextual header banner, and footer telemetry.
+ * 
+ * - Why it exists:
+ *   Enforces a consistent layout hierarchy across all views while avoiding
+ *   redundant interactive controls. Date selection is delegated strictly to
+ *   the dedicated DatePicker toolbar on view components.
+ * 
+ * - How it fits into the workflow:
+ *   Wraps the active view returned by App.tsx, hosting children within the <main> container.
+ */
+export default function Layout({ children, currentView, onNavigate }: LayoutProps) {
   return (
     <div className="min-h-screen bg-[#050608] text-slate-100 flex flex-col items-center pt-3 sm:pt-5 pb-6 px-3 sm:px-6 relative overflow-hidden">
       
@@ -90,60 +90,6 @@ export default function Layout({ children, currentView, onNavigate, selectedDate
                 </span>
               </div>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* Telescope Control Dial (Spherical Orb) Date Picker - Hidden on Landing Page */}
-      {currentView !== 'landing' && (
-        <div className="mb-8 relative group/dial flex items-center justify-center z-10 animate-fade-in">
-          {/* Pulsing orbital halo rings */}
-          <span className="absolute -inset-4 border border-dashed border-[#E4A853]/20 rounded-full animate-spin [animation-duration:40s] pointer-events-none opacity-50 group-hover/dial:opacity-100 transition-opacity duration-500" />
-          <span className="absolute -inset-2 border border-[#E4A853]/10 rounded-full pointer-events-none" />
-          <div className="absolute inset-0 bg-[#E4A853] opacity-10 blur-xl rounded-[100%] group-hover/dial:opacity-30 transition-opacity duration-500 pointer-events-none" />
-
-          <div
-            className="
-              relative h-24 w-24 rounded-full
-              bg-[#050608]/90 
-              flex flex-col items-center justify-center
-              shadow-[0_0_20px_rgba(228,168,83,0.3),inset_0_1px_3px_rgba(255,255,255,0.08)]
-              border border-[#E4A853]/50
-              backdrop-blur-xl
-              transition-all duration-500
-              hover:shadow-[0_0_40px_rgba(228,168,83,0.6)]
-              hover:border-[#E4A853]/90
-              active:scale-95 cursor-pointer
-              overflow-hidden
-            "
-          >
-            {/* Outer dial ring scale marks */}
-            <div className="absolute inset-1 border border-[#E4A853]/15 rounded-full group-hover/dial:border-[#E4A853]/35 transition-colors duration-300 pointer-events-none" />
-            
-            <span className="text-[10px] font-mono tracking-widest text-[#E4A853]/90 uppercase select-none leading-none mb-0.5 mt-1.5 font-bold z-10 pointer-events-none transition-colors group-hover/dial:text-[#E4A853]">
-              {(() => {
-                try {
-                  return new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short' }).toUpperCase();
-                } catch { return 'OBS'; }
-              })()}
-            </span>
-            <span className="text-3xl font-serif font-bold text-[#E4A853] select-none leading-none tracking-tight group-hover/dial:text-[#ffd99e] transition-colors z-10 pointer-events-none drop-shadow-[0_0_10px_rgba(228,168,83,0.8)]">
-              {selectedDate.split('-')[2] || '01'}
-            </span>
-            <span className="text-[9px] font-mono tracking-widest text-slate-400 uppercase select-none leading-none mt-1 group-hover/dial:text-[#E4A853]/70 transition-colors z-10 pointer-events-none">
-              {selectedDate.split('-')[0] || '2026'}
-            </span>
-            
-            {/* Fully interactive hidden date field */}
-            <input
-              type="date"
-              min={minDate}
-              max={todayStr}
-              value={selectedDate}
-              onChange={(e) => onDateChange(e.target.value)}
-              className="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-20 rounded-full"
-              title="Select Specific Coordinates"
-            />
           </div>
         </div>
       )}
