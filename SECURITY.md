@@ -17,7 +17,7 @@ Security updates apply to the latest version of the project:
 
 If you discover a security issue, please report it responsibly.
 
-**Email:** `hello@lukeponga.dev`  
+**Email:** `developmentdesignsltd@gmail.com`  
 **Subject:** `Security Report – dailyspaceimage_nasa`
 
 Please include:
