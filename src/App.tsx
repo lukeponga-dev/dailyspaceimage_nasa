@@ -4,6 +4,7 @@
  */
 
 import { useState, useEffect } from 'react';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 import NasaApod from './components/NasaApod';
 import Layout from './components/Layout';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -122,6 +123,7 @@ export default function App() {
       >
         {renderView()}
       </Layout>
+      <SpeedInsights />
     </ErrorBoundary>
   );
 }
