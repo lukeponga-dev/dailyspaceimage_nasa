@@ -344,46 +344,64 @@ export default function LandingPage({ onNavigate, favorites, onSelectDate }: Lan
       {/* Elegant Triple Gateway Portals */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Portal 1 */}
-        <div 
+        <button 
+          type="button"
           onClick={handleGoToToday}
-          className="group/p1 relative rounded-xl border border-white/5 bg-[#0C0E12]/80 hover:border-[#E4A853]/40 p-6 text-left cursor-pointer transition-all duration-300 hover:-translate-y-1 shadow-lg"
+          className="group/p1 relative rounded-xl border border-white/5 bg-[#0C0E12]/80 hover:bg-[#E4A853]/5 hover:border-[#E4A853]/40 p-6 text-left cursor-pointer transition-all duration-300 hover:-translate-y-1 active:scale-[0.98] active:translate-y-0 shadow-lg hover:shadow-[0_12px_30px_rgba(228,168,83,0.15)] flex flex-col items-start w-full focus:outline-none focus:ring-2 focus:ring-[#E4A853]/50"
         >
-          <div className="h-10 w-10 rounded-lg bg-[#E4A853]/10 border border-[#E4A853]/20 flex items-center justify-center text-[#E4A853] mb-5 group-hover/p1:bg-[#E4A853]/20 transition-colors">
-            <Compass size={18} />
+          <div className="flex items-center justify-between w-full mb-5">
+            <div className="h-10 w-10 rounded-lg bg-[#E4A853]/10 border border-[#E4A853]/20 flex items-center justify-center text-[#E4A853] group-hover/p1:bg-[#E4A853]/20 group-hover/p1:scale-110 transition-all duration-300">
+              <Compass size={18} />
+            </div>
+            <div className="h-8 w-8 rounded-full flex items-center justify-center border border-white/5 bg-white/5 text-slate-500 group-hover/p1:bg-[#E4A853]/20 group-hover/p1:text-[#E4A853] group-hover/p1:border-[#E4A853]/40 transition-all duration-300">
+              <ChevronRight size={16} className="group-hover/p1:translate-x-0.5 transition-transform" />
+            </div>
           </div>
           <h4 className="text-lg font-serif font-semibold text-slate-200 group-hover/p1:text-[#E4A853] transition-colors mb-2">Explore Today</h4>
           <p className="text-xs text-slate-400 font-light leading-relaxed font-sans">
             Interface directly with today's live astronomical telemetry. Back-date coordinates through our interactive spherical control dial.
           </p>
-        </div>
+        </button>
 
         {/* Portal 2 */}
-        <div 
+        <button 
+          type="button"
           onClick={() => onNavigate('discover')}
-          className="group/p2 relative rounded-xl border border-white/5 bg-[#0C0E12]/80 hover:border-[#E4A853]/40 p-6 text-left cursor-pointer transition-all duration-300 hover:-translate-y-1 shadow-lg"
+          className="group/p2 relative rounded-xl border border-white/5 bg-[#0C0E12]/80 hover:bg-[#E4A853]/5 hover:border-[#E4A853]/40 p-6 text-left cursor-pointer transition-all duration-300 hover:-translate-y-1 active:scale-[0.98] active:translate-y-0 shadow-lg hover:shadow-[0_12px_30px_rgba(228,168,83,0.15)] flex flex-col items-start w-full focus:outline-none focus:ring-2 focus:ring-[#E4A853]/50"
         >
-          <div className="h-10 w-10 rounded-lg bg-[#E4A853]/10 border border-[#E4A853]/20 flex items-center justify-center text-[#E4A853] mb-5 group-hover/p2:bg-[#E4A853]/20 transition-colors">
-            <Eye size={18} />
+          <div className="flex items-center justify-between w-full mb-5">
+            <div className="h-10 w-10 rounded-lg bg-[#E4A853]/10 border border-[#E4A853]/20 flex items-center justify-center text-[#E4A853] group-hover/p2:bg-[#E4A853]/20 group-hover/p2:scale-110 transition-all duration-300">
+              <Eye size={18} />
+            </div>
+            <div className="h-8 w-8 rounded-full flex items-center justify-center border border-white/5 bg-white/5 text-slate-500 group-hover/p2:bg-[#E4A853]/20 group-hover/p2:text-[#E4A853] group-hover/p2:border-[#E4A853]/40 transition-all duration-300">
+              <ChevronRight size={16} className="group-hover/p2:translate-x-0.5 transition-transform" />
+            </div>
           </div>
           <h4 className="text-lg font-serif font-semibold text-slate-200 group-hover/p2:text-[#E4A853] transition-colors mb-2">Voyage Gallery</h4>
           <p className="text-xs text-slate-400 font-light leading-relaxed font-sans">
             Examine deep-space catalogs with dynamic grid layout preferences. Query, search, and randomize multi-decade NASA coordinates.
           </p>
-        </div>
+        </button>
 
         {/* Portal 3 */}
-        <div 
+        <button 
+          type="button"
           onClick={() => onNavigate('favorites')}
-          className="group/p3 relative rounded-xl border border-white/5 bg-[#0C0E12]/80 hover:border-[#E4A853]/40 p-6 text-left cursor-pointer transition-all duration-300 hover:-translate-y-1 shadow-lg"
+          className="group/p3 relative rounded-xl border border-white/5 bg-[#0C0E12]/80 hover:bg-[#E4A853]/5 hover:border-[#E4A853]/40 p-6 text-left cursor-pointer transition-all duration-300 hover:-translate-y-1 active:scale-[0.98] active:translate-y-0 shadow-lg hover:shadow-[0_12px_30px_rgba(228,168,83,0.15)] flex flex-col items-start w-full focus:outline-none focus:ring-2 focus:ring-[#E4A853]/50"
         >
-          <div className="h-10 w-10 rounded-lg bg-[#E4A853]/10 border border-[#E4A853]/20 flex items-center justify-center text-[#E4A853] mb-5 group-hover/p3:bg-[#E4A853]/20 transition-colors">
-            <Star size={18} />
+          <div className="flex items-center justify-between w-full mb-5">
+            <div className="h-10 w-10 rounded-lg bg-[#E4A853]/10 border border-[#E4A853]/20 flex items-center justify-center text-[#E4A853] group-hover/p3:bg-[#E4A853]/20 group-hover/p3:scale-110 transition-all duration-300">
+              <Star size={18} />
+            </div>
+            <div className="h-8 w-8 rounded-full flex items-center justify-center border border-white/5 bg-white/5 text-slate-500 group-hover/p3:bg-[#E4A853]/20 group-hover/p3:text-[#E4A853] group-hover/p3:border-[#E4A853]/40 transition-all duration-300">
+              <ChevronRight size={16} className="group-hover/p3:translate-x-0.5 transition-transform" />
+            </div>
           </div>
           <h4 className="text-lg font-serif font-semibold text-slate-200 group-hover/p3:text-[#E4A853] transition-colors mb-2">Saved Wonders</h4>
           <p className="text-xs text-slate-400 font-light leading-relaxed font-sans">
             Retrieve your personal saved cosmic telemetry logs. Securely catalog and access your curated archive anytime.
           </p>
-        </div>
+        </button>
       </div>
 
       {/* Fullscreen Expansion Overlay */}
