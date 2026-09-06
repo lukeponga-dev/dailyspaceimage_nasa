@@ -1,6 +1,6 @@
 {
-  "name": "Daily Space Image",
-  "description": "A simple application to display the NASA Astronomy Picture of the Day.",
+  "name": "NASA Daily Space Image Viewer",
+  "description": "A modern, image-focused web app for browsing NASA's Astronomy Picture of the Day (APOD).",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

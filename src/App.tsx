@@ -8,20 +8,11 @@ import { SpeedInsights } from '@vercel/speed-insights/react';
 import NasaApod from './components/NasaApod';
 import Layout from './components/Layout';
 import ErrorBoundary from './components/ErrorBoundary';
-import Discover from './components/Discover';
+import Gallery from './components/Gallery';
 import Favorites from './components/Favorites';
 import LandingPage from './components/LandingPage';
 import { getEasternDate } from './utils/dateUtils';
-
-interface ApodData {
-  title: string;
-  url: string;
-  explanation: string;
-  date: string;
-  media_type: string;
-  copyright?: string;
-  hdurl?: string;
-}
+import { ApodData } from './types';
 
 export default function App() {
   const [currentView, setCurrentView] = useState('landing');
@@ -86,7 +77,7 @@ export default function App() {
         );
       case 'discover': 
         return (
-          <Discover 
+          <Gallery 
             favorites={favorites}
             onToggleFavorite={toggleFavorite}
             isFavorite={isFavorite}

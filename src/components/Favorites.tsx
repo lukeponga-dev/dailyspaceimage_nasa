@@ -1,25 +1,12 @@
 import { Trash2, ExternalLink, Star } from 'lucide-react';
-
-interface ApodData {
-  title: string;
-  url: string;
-  explanation: string;
-  date: string;
-  media_type: string;
-  copyright?: string;
-  hdurl?: string;
-}
+import { ApodData } from '../types';
+import { formatDate } from '../utils/dateUtils';
 
 interface FavoritesProps {
   favorites: ApodData[];
   onRemoveFavorite: (date: string) => void;
   onSelectImage: (date: string) => void;
 }
-
-const formatDate = (dateString: string) => {
-  const [year, month, day] = dateString.split('-');
-  return `${day}/${month}/${year}`;
-};
 
 export default function Favorites({ favorites, onRemoveFavorite, onSelectImage }: FavoritesProps) {
   return (

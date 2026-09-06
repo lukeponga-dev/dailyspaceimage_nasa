@@ -2,16 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { motion } from 'motion/react';
 import { Compass, Sparkles, Star, ChevronRight, Activity, Globe, Eye, Rocket } from 'lucide-react';
 import { getEasternDate } from '../utils/dateUtils';
-
-interface ApodData {
-  title: string;
-  url: string;
-  explanation: string;
-  date: string;
-  media_type: string;
-  copyright?: string;
-  hdurl?: string;
-}
+import { ApodData } from '../types';
 
 interface LandingPageProps {
   onNavigate: (view: string) => void;
