@@ -50,7 +50,7 @@ Endpoint: `https://api.nasa.gov/planetary/apod`
 ## 📁 Project Structure
 
 ```nano
-├── app/
+├── src/
 │   ├── page.tsx              // Main APOD viewer
 │   ├── components/
 │   │   ├── ApodHero.tsx      // Daily hero image + metadata
@@ -58,18 +58,14 @@ Endpoint: `https://api.nasa.gov/planetary/apod`
 │   │   ├── Gallery.tsx       // Recent images grid
 │   │   ├── DatePicker.tsx    // Calendar selector
 │   │   └── Skeleton.tsx      // Loading placeholders
-│   └── api/
-│       └── apod.ts           // Server-side APOD fetcher
-│
-├── lib/
-│   └── fetchApod.ts          // Shared APOD fetch logic
-│
-├── public/
-│   └── icons/                // UI icons
-│
-├── styles/
-│   └── globals.css
-│
+│   ├── lib/
+│   │   └── fetchApod.ts          // Shared APOD fetch logic
+│   ├── public/
+│   │   └── icons/                // UI icons
+│   ├── styles/
+│   │   └── globals.css
+├── api/
+│  └── apod.ts           // Server-side APOD fetcher
 └── README.md
 ```
 
