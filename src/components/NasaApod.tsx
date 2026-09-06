@@ -25,7 +25,7 @@ import { AlertCircle, RefreshCw, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ApodData } from '../types';
 import { fetchApod } from '../lib/fetchApod';
-import { getEasternDate, addDays } from '../utils/dateUtils';
+import { getEasternDate, addDays, getRandomDate } from '../utils/dateUtils';
 import DatePicker from './DatePicker';
 import ApodHero from './ApodHero';
 import ApodModal from './ApodModal';
@@ -208,6 +208,7 @@ export default function NasaApod({
           onToggleFavorite={handleToggleFavWithToast}
           isFavorite={isFavorite(data.date)}
           onShare={handleShare}
+          onRandom={() => onDateChange(getRandomDate(todayStr))}
         />
       )}
 

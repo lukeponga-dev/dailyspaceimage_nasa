@@ -101,17 +101,17 @@ export default function DatePicker({ selectedDate, onDateChange, disabled = fals
           type="button"
           onClick={handlePrev}
           disabled={disabled || isAtMin}
-          className="p-2 sm:p-2.5 text-slate-300 hover:text-[#E4A853] bg-white/[0.03] hover:bg-[#E4A853]/15 border border-white/5 hover:border-[#E4A853]/40 rounded-xl transition-all duration-200 active:scale-95 disabled:opacity-25 disabled:pointer-events-none cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#E4A853]"
+          className="min-w-[44px] min-h-[44px] sm:min-w-[40px] sm:min-h-[40px] flex items-center justify-center text-slate-300 hover:text-[#E4A853] bg-white/[0.03] hover:bg-[#E4A853]/15 border border-white/5 hover:border-[#E4A853]/40 rounded-xl transition-all duration-200 active:scale-95 disabled:opacity-25 disabled:pointer-events-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#E4A853]"
           title="Previous Observation"
           aria-label="Previous day"
         >
           <ChevronLeft size={18} aria-hidden="true" />
         </button>
 
-        {/* Date Selector input console container */}
+        {/* Date Selector input console container: [ Date ▾ ] */}
         <div 
           id="date-selector-input-wrapper" 
-          className="relative flex items-center bg-[#050608] border border-white/15 hover:border-[#E4A853]/50 focus-within:border-[#E4A853] focus-within:ring-2 focus-within:ring-[#E4A853]/20 rounded-xl px-3 py-1.5 sm:py-2 transition-all shadow-inner"
+          className="relative flex items-center bg-[#050608] border border-white/15 hover:border-[#E4A853]/50 focus-within:border-[#E4A853] focus-within:ring-2 focus-within:ring-[#E4A853]/20 rounded-xl px-3 py-2 transition-all shadow-inner min-h-[44px]"
         >
           <Calendar size={15} className="text-[#E4A853] shrink-0 mr-2 pointer-events-none" aria-hidden="true" />
           <input
@@ -122,7 +122,7 @@ export default function DatePicker({ selectedDate, onDateChange, disabled = fals
             value={selectedDate}
             onChange={handleInputChange}
             disabled={disabled}
-            className="bg-transparent border-0 text-xs sm:text-sm font-mono font-medium text-slate-100 focus:outline-none transition-colors cursor-pointer disabled:opacity-50 [color-scheme:dark] tracking-wider"
+            className="bg-transparent border-0 text-xs sm:text-sm font-mono font-semibold text-slate-100 focus:outline-none transition-colors cursor-pointer disabled:opacity-50 [color-scheme:dark] tracking-wider"
             aria-label="Select observation date"
           />
         </div>
@@ -133,7 +133,7 @@ export default function DatePicker({ selectedDate, onDateChange, disabled = fals
           type="button"
           onClick={handleNext}
           disabled={disabled || isAtMax}
-          className="p-2 sm:p-2.5 text-slate-300 hover:text-[#E4A853] bg-white/[0.03] hover:bg-[#E4A853]/15 border border-white/5 hover:border-[#E4A853]/40 rounded-xl transition-all duration-200 active:scale-95 disabled:opacity-25 disabled:pointer-events-none cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#E4A853]"
+          className="min-w-[44px] min-h-[44px] sm:min-w-[40px] sm:min-h-[40px] flex items-center justify-center text-slate-300 hover:text-[#E4A853] bg-white/[0.03] hover:bg-[#E4A853]/15 border border-white/5 hover:border-[#E4A853]/40 rounded-xl transition-all duration-200 active:scale-95 disabled:opacity-25 disabled:pointer-events-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#E4A853]"
           title="Next Observation"
           aria-label="Next day"
         >
@@ -148,7 +148,7 @@ export default function DatePicker({ selectedDate, onDateChange, disabled = fals
           type="button"
           onClick={handleRandom}
           disabled={disabled}
-          className="flex items-center gap-1.5 px-3 sm:px-3.5 py-2 text-xs font-mono font-medium text-slate-300 hover:text-[#E4A853] bg-white/[0.03] hover:bg-[#E4A853]/15 border border-white/10 hover:border-[#E4A853]/40 rounded-xl transition-all duration-200 active:scale-95 cursor-pointer disabled:opacity-30 focus:outline-none focus:ring-1 focus:ring-[#E4A853]"
+          className="min-h-[44px] flex items-center gap-1.5 px-3 sm:px-3.5 py-2 text-xs font-mono font-medium text-slate-300 hover:text-[#E4A853] bg-white/[0.03] hover:bg-[#E4A853]/15 border border-white/10 hover:border-[#E4A853]/40 rounded-xl transition-all duration-200 active:scale-95 cursor-pointer disabled:opacity-30 focus:outline-none focus:ring-2 focus:ring-[#E4A853]"
           title="Jump to Random Historical Observation"
           aria-label="Jump to random historical observation"
         >
@@ -162,7 +162,7 @@ export default function DatePicker({ selectedDate, onDateChange, disabled = fals
           type="button"
           onClick={handleToday}
           disabled={disabled || isAtMax}
-          className="flex items-center gap-1.5 px-3.5 sm:px-4 py-2 text-xs font-mono font-bold bg-[#E4A853] text-[#050608] hover:bg-[#f3be73] hover:shadow-[0_0_20px_rgba(228,168,83,0.4)] rounded-xl transition-all duration-200 active:scale-95 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shadow-md focus:outline-none focus:ring-1 focus:ring-[#E4A853]"
+          className="min-h-[44px] flex items-center gap-1.5 px-3.5 sm:px-4 py-2 text-xs font-mono font-bold bg-[#E4A853] text-[#050608] hover:bg-[#f3be73] hover:shadow-[0_0_20px_rgba(228,168,83,0.4)] rounded-xl transition-all duration-200 active:scale-95 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shadow-md focus:outline-none focus:ring-2 focus:ring-[#E4A853]"
           title="Jump to Latest Coordinates"
           aria-label="Jump to today's coordinates"
         >

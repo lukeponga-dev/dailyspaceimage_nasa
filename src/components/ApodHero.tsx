@@ -24,7 +24,7 @@
  *   Acts as the primary presentation layer when users browse daily or historical astronomical entries.
  */
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { 
   Maximize2, 
   Minimize2, 
@@ -36,11 +36,18 @@ import {
   ExternalLink,
   ZoomIn,
   ZoomOut,
-  ChevronDown
+  ChevronDown,
+  Shuffle,
+  BookOpen,
+  ListFilter,
+  Radio,
+  Compass,
+  Cpu
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { ApodData } from '../types';
 import { formatDate } from '../utils/dateUtils';
+import { parseScientificSummary } from '../utils/textUtils';
 
 interface ApodHeroProps {
   data: ApodData;
@@ -48,6 +55,7 @@ interface ApodHeroProps {
   onToggleFavorite: (item: ApodData) => void;
   isFavorite: boolean;
   onShare: (item: ApodData) => void;
+  onRandom?: () => void;
 }
 
 export default function ApodHero({
@@ -56,14 +64,20 @@ export default function ApodHero({
   onToggleFavorite,
   isFavorite,
   onShare,
+  onRandom,
 }: ApodHeroProps) {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [isZoomed, setIsZoomed] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const stageRef = useRef<HTMLDivElement | null>(null);
-  const analysisRef = useRef<HTMLDivElement | null>(null);
+  const summaryRef = useRef<HTMLDivElement | null>(null);
   const isVideo = data.media_type === 'video';
+
+  // Parse explanation into structured, mobile-skimmable stacked cards
+  const summary = useMemo(() => {
+    return parseScientificSummary(data.explanation, data.title, data.copyright, data.date, data.media_type);
+  }, [data.explanation, data.title, data.copyright, data.date, data.media_type]);
 
   // Listen for native fullscreen changes
   useEffect(() => {
@@ -76,9 +90,6 @@ export default function ApodHero({
 
   /**
    * Toggles native browser full-screen mode on the image stage.
-   * - What it does: Calls requestFullscreen or exitFullscreen on the image stage container.
-   * - Why it exists: Fulfills requests for an immersive, edge-to-edge astronomical viewing experience.
-   * - How it fits into the workflow: Triggered from the stage overlay button or the header action bar.
    */
   const handleToggleFullscreen = (e?: React.MouseEvent) => {
     e?.stopPropagation();
@@ -99,9 +110,6 @@ export default function ApodHero({
 
   /**
    * Dispatches client-side download for HD celestial imagery.
-   * - What it does: Fetches the image blob and initiates a browser file download.
-   * - Why it exists: Grants users direct local access to high-resolution NASA photography.
-   * - How it fits into the workflow: Triggered from the hero action bar; falls back to direct URL in a new tab if CORS blocks client blobs.
    */
   const handleDownload = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -119,14 +127,12 @@ export default function ApodHero({
       document.body.removeChild(anchor);
       window.URL.revokeObjectURL(blobUrl);
     } catch {
-      // Fallback: direct window redirect for cross-origin resources
       window.open(downloadUrl, '_blank', 'noopener,noreferrer');
     }
   };
 
   /**
    * Keyboard accessibility handler for triggering the full HD modal.
-   * Enables keyboard users to activate the zoom modal via Enter or Space.
    */
   const handleStageKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' || e.key === ' ') {
@@ -142,99 +148,42 @@ export default function ApodHero({
       initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-      className="relative w-full max-w-4xl mx-auto rounded-2xl border border-[#E4A853]/25 bg-[#0C0E12]/90 backdrop-blur-xl p-6 sm:p-8 md:p-10 shadow-[0_20px_60px_rgba(0,0,0,0.7)] overflow-hidden text-left"
+      className="relative w-full max-w-4xl mx-auto rounded-2xl border border-[#E4A853]/25 bg-[#0C0E12]/95 backdrop-blur-xl p-4 sm:p-7 md:p-9 shadow-[0_20px_60px_rgba(0,0,0,0.7)] overflow-hidden text-left space-y-6"
     >
-      {/* Visual Reticle Corner Accents mimicking astronomical telescope HUDs */}
+      {/* Optical Reticle Corner Accents */}
       <div aria-hidden="true" className="absolute top-3 left-3 w-4 h-4 border-l-2 border-t-2 border-[#E4A853]/40 pointer-events-none" />
       <div aria-hidden="true" className="absolute top-3 right-3 w-4 h-4 border-r-2 border-t-2 border-[#E4A853]/40 pointer-events-none" />
       <div aria-hidden="true" className="absolute bottom-3 left-3 w-4 h-4 border-l-2 border-b-2 border-[#E4A853]/40 pointer-events-none" />
       <div aria-hidden="true" className="absolute bottom-3 right-3 w-4 h-4 border-r-2 border-b-2 border-[#E4A853]/40 pointer-events-none" />
 
-      {/* Top Header: Observation Timestamp, Live Telemetry & Interactive Action Controls */}
-      <header className="flex flex-wrap items-center justify-between gap-3 sm:gap-4 border-b border-white/5 pb-4 mb-6">
-        <div className="flex flex-wrap items-center gap-2">
+      {/* Observation Date & Feed Tag */}
+      <div className="flex items-center justify-between gap-2 border-b border-white/5 pb-3">
+        <div className="flex items-center gap-2">
           <time
             dateTime={data.date}
             className="px-2.5 py-1 rounded-full bg-[#E4A853]/15 border border-[#E4A853]/30 text-[#E4A853] text-[10px] font-mono uppercase font-bold tracking-wider"
           >
             {formatDate(data.date)}
           </time>
-          
-          {/* Real-time Indicator: JWST link active */}
-          <div 
-            id="hero-jwst-indicator"
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-950/70 border border-emerald-500/35 text-[9px] font-mono font-semibold text-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.15)]"
-          >
-            <span className="relative flex h-1.5 w-1.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
-            </span>
-            <span className="uppercase tracking-wider">JWST link active</span>
-          </div>
-
-          <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider hidden md:inline">
-            {isVideo ? 'Astronomy Video Stream' : 'Deep Space Imagery'}
+          <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider">
+            {isVideo ? 'Video Stream' : 'Deep Space Imagery'}
           </span>
         </div>
 
-        {/* Action Controls: Favorite, Fullscreen, Share, Download */}
-        <div className="flex items-center gap-2">
-          <button
-            id="hero-toggle-favorite-btn"
-            type="button"
-            onClick={() => onToggleFavorite(data)}
-            aria-label={isFavorite ? `Remove ${data.title} from favorites` : `Add ${data.title} to favorites`}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono transition-colors cursor-pointer border focus:outline-none focus:ring-2 focus:ring-[#E4A853]/50 ${
-              isFavorite
-                ? 'bg-[#E4A853] text-[#050608] border-[#E4A853] font-bold shadow-[0_0_15px_rgba(228,168,83,0.3)]'
-                : 'bg-white/5 hover:bg-white/10 text-slate-300 border-white/10'
-            }`}
-          >
-            <Star size={13} className={isFavorite ? 'fill-[#050608]' : ''} aria-hidden="true" />
-            <span className="hidden sm:inline">{isFavorite ? 'Saved' : 'Favorite'}</span>
-          </button>
+        <span className="text-[10px] font-mono text-[#E4A853]/70 uppercase tracking-widest hidden sm:inline">
+          NASA APOD ARCHIVE
+        </span>
+      </div>
 
-          {!isVideo && (
-            <button
-              id="hero-fullscreen-btn"
-              type="button"
-              onClick={handleToggleFullscreen}
-              aria-label={isFullscreen ? "Exit full-screen mode" : "Enter full-screen mode"}
-              title={isFullscreen ? "Exit Full-Screen" : "Full-Screen Mode"}
-              className="p-2 text-slate-400 hover:text-[#E4A853] bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#E4A853]/50"
-            >
-              {isFullscreen ? <Minimize2 size={15} aria-hidden="true" /> : <Maximize2 size={15} aria-hidden="true" />}
-            </button>
-          )}
-
-          <button
-            id="hero-share-telemetry-btn"
-            type="button"
-            onClick={() => onShare(data)}
-            aria-label="Share this astronomical observation"
-            className="p-2 text-slate-400 hover:text-slate-100 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#E4A853]/50"
-          >
-            <Share2 size={15} aria-hidden="true" />
-          </button>
-
-          {!isVideo && (
-            <button
-              id="hero-download-image-btn"
-              type="button"
-              onClick={handleDownload}
-              aria-label="Download high-resolution image"
-              className="p-2 text-slate-400 hover:text-slate-100 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#E4A853]/50"
-            >
-              <Download size={15} aria-hidden="true" />
-            </button>
-          )}
-        </div>
-      </header>
-
-      {/* Main Visual Display: Image Stage or Video Frame with Tap-to-Zoom & Full-Screen */}
+      {/* =========================================================================
+          4. PRIMARY IMAGE (Mobile Optimized)
+          - 100% width, auto height
+          - Tap-to-zoom opens full-screen viewer or toggles magnification
+          - Reachable zoom pill
+          ========================================================================= */}
       <section 
         ref={stageRef}
-        className={`relative mb-6 rounded-xl overflow-hidden bg-black/80 border border-white/10 shadow-inner group ${
+        className={`relative rounded-xl overflow-hidden bg-black/80 border border-white/10 shadow-inner group ${
           isFullscreen ? 'flex items-center justify-center p-4 bg-black min-h-screen' : ''
         }`}
       >
@@ -256,11 +205,10 @@ export default function ApodHero({
             onClick={onOpenModal}
             onKeyDown={handleStageKeyDown}
             aria-label={`Inspect high-definition observation in modal: ${data.title}`}
-            className="relative cursor-pointer overflow-hidden flex items-center justify-center min-h-[360px] sm:min-h-[480px] focus:outline-none focus:ring-2 focus:ring-[#E4A853] rounded-xl"
+            className="relative cursor-pointer overflow-hidden flex items-center justify-center min-h-[300px] sm:min-h-[440px] focus:outline-none focus:ring-2 focus:ring-[#E4A853] rounded-xl"
           >
             {!imageError ? (
               <>
-                {/* Visual loading pulse while full image downloads */}
                 {!imageLoaded && (
                   <div
                     aria-hidden="true"
@@ -276,13 +224,13 @@ export default function ApodHero({
                   decoding="async"
                   onLoad={() => setImageLoaded(true)}
                   onError={() => setImageError(true)}
-                  className={`w-full h-auto max-h-[620px] object-contain transition-all duration-500 ease-out select-none ${
+                  className={`w-full h-auto max-h-[560px] object-contain transition-all duration-500 ease-out select-none ${
                     imageLoaded ? 'opacity-100' : 'opacity-0'
                   } ${isZoomed ? 'scale-150 cursor-zoom-out' : 'scale-100 cursor-zoom-in'}`}
                 />
               </>
             ) : (
-              <div className="p-12 text-center text-slate-400 space-y-3">
+              <div className="p-10 text-center text-slate-400 space-y-3">
                 <AlertTriangle className="mx-auto text-amber-400" size={32} aria-hidden="true" />
                 <p className="text-sm font-mono text-slate-300">Image stream unavailable</p>
                 <a
@@ -302,21 +250,21 @@ export default function ApodHero({
                 id="hero-tap-to-zoom-btn"
                 type="button"
                 onClick={handleToggleZoom}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#050608]/85 hover:bg-[#050608] border border-[#E4A853]/40 text-[#E4A853] text-[11px] font-mono backdrop-blur-md shadow-lg transition-all hover:scale-105 active:scale-95 cursor-pointer"
+                className="min-h-[38px] flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#050608]/90 hover:bg-[#050608] border border-[#E4A853]/50 text-[#E4A853] text-[11px] font-mono backdrop-blur-md shadow-lg transition-all active:scale-95 cursor-pointer"
                 title={isZoomed ? "Reset Zoom" : "Tap to Zoom in"}
               >
                 {isZoomed ? <ZoomOut size={13} /> : <ZoomIn size={13} />}
-                <span>{isZoomed ? 'Reset Zoom' : 'Tap to Zoom'}</span>
+                <span>{isZoomed ? 'Reset Zoom' : 'Tap to Zoom 🔍'}</span>
               </button>
 
               <button
                 id="hero-fullscreen-pill-btn"
                 type="button"
                 onClick={handleToggleFullscreen}
-                className="p-1.5 rounded-full bg-[#050608]/85 hover:bg-[#050608] border border-[#E4A853]/40 text-[#E4A853] text-[11px] font-mono backdrop-blur-md shadow-lg transition-all hover:scale-105 active:scale-95 cursor-pointer"
+                className="min-h-[38px] min-w-[38px] flex items-center justify-center rounded-full bg-[#050608]/90 hover:bg-[#050608] border border-[#E4A853]/50 text-[#E4A853] text-[11px] font-mono backdrop-blur-md shadow-lg transition-all active:scale-95 cursor-pointer"
                 title={isFullscreen ? "Exit Fullscreen" : "Full-Screen Mode"}
               >
-                {isFullscreen ? <Minimize2 size={13} /> : <Maximize2 size={13} />}
+                {isFullscreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
               </button>
             </div>
 
@@ -334,45 +282,177 @@ export default function ApodHero({
         )}
       </section>
 
-      {/* Scroll Cue: Guides users down into the astronomical analysis below */}
-      <div className="flex justify-center -mt-2 mb-6">
+      {/* Scroll Cue: Guides users down into the stacked summary cards */}
+      <div className="flex justify-center -my-1">
         <button
           id="hero-scroll-cue-btn"
           type="button"
-          onClick={() => analysisRef.current?.scrollIntoView({ behavior: 'smooth' })}
+          onClick={() => summaryRef.current?.scrollIntoView({ behavior: 'smooth' })}
           className="group inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/[0.03] hover:bg-[#E4A853]/10 border border-white/10 hover:border-[#E4A853]/40 text-slate-400 hover:text-[#E4A853] text-[10px] font-mono uppercase tracking-wider transition-all duration-300 cursor-pointer shadow-sm active:scale-95"
-          aria-label="Scroll down to read astronomical analysis and details"
+          aria-label="Scroll down to read scientific summary cards"
         >
-          <span>Scroll for Astronomical Analysis</span>
+          <span>Scroll to Discover</span>
           <ChevronDown size={12} className="animate-bounce text-[#E4A853]" />
         </button>
       </div>
 
-      {/* Title & Observational Metadata */}
-      <footer className="space-y-4">
-        <div className="space-y-1">
-          <h1 className="text-2xl sm:text-3xl md:text-4xl font-serif font-bold text-white tracking-tight leading-tight">
-            {data.title}
-          </h1>
-          {data.copyright && (
-            <p className="text-xs font-mono text-slate-400">
-              Credit & Copyright: <span className="text-slate-200">{data.copyright.trim()}</span>
-            </p>
+      {/* =========================================================================
+          5. IMAGE TITLE + QUICK ACTIONS
+          - Inline actions for thumb reach
+          - Star icon toggles saved state
+          - Randomizer boosts engagement
+          ========================================================================= */}
+      <section id="hero-title-actions-section" className="space-y-3 pt-2">
+        <h1 className="text-xl sm:text-2xl md:text-3xl font-serif font-bold text-white tracking-tight leading-snug">
+          {data.title}
+        </h1>
+
+        {/* Inline Quick Action Buttons for Thumb Reach */}
+        <div className="flex flex-wrap items-center gap-2 pt-1">
+          {/* ★ Save / Saved Button */}
+          <button
+            id="hero-toggle-favorite-btn"
+            type="button"
+            onClick={() => onToggleFavorite(data)}
+            aria-label={isFavorite ? `Remove ${data.title} from favorites` : `Add ${data.title} to favorites`}
+            className={`min-h-[44px] flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-mono transition-all cursor-pointer border active:scale-95 focus:outline-none focus:ring-2 focus:ring-[#E4A853]/50 ${
+              isFavorite
+                ? 'bg-[#E4A853] text-[#050608] border-[#E4A853] font-bold shadow-[0_0_15px_rgba(228,168,83,0.3)]'
+                : 'bg-white/5 hover:bg-white/10 text-slate-200 border-white/15 hover:border-[#E4A853]/40'
+            }`}
+          >
+            <Star size={14} className={isFavorite ? 'fill-[#050608]' : ''} aria-hidden="true" />
+            <span>{isFavorite ? '★ Saved' : '★ Save'}</span>
+          </button>
+
+          {/* ⟳ Random Button */}
+          {onRandom && (
+            <button
+              id="hero-random-btn"
+              type="button"
+              onClick={onRandom}
+              aria-label="Randomize celestial observation"
+              className="min-h-[44px] flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-mono transition-all cursor-pointer border bg-white/5 hover:bg-[#E4A853]/15 text-slate-200 hover:text-[#E4A853] border-white/15 hover:border-[#E4A853]/40 active:scale-95 focus:outline-none focus:ring-2 focus:ring-[#E4A853]/50"
+            >
+              <Shuffle size={14} aria-hidden="true" />
+              <span>⟳ Random</span>
+            </button>
+          )}
+
+          {/* Share Action */}
+          <button
+            id="hero-share-telemetry-btn"
+            type="button"
+            onClick={() => onShare(data)}
+            aria-label="Share this astronomical observation"
+            className="min-h-[44px] min-w-[44px] flex items-center justify-center p-2 text-slate-300 hover:text-white bg-white/5 hover:bg-white/10 border border-white/15 hover:border-[#E4A853]/40 rounded-xl transition-all cursor-pointer active:scale-95 focus:outline-none focus:ring-2 focus:ring-[#E4A853]/50"
+            title="Share"
+          >
+            <Share2 size={15} aria-hidden="true" />
+          </button>
+
+          {/* Download Action (if image) */}
+          {!isVideo && (
+            <button
+              id="hero-download-image-btn"
+              type="button"
+              onClick={handleDownload}
+              aria-label="Download high-resolution image"
+              className="min-h-[44px] min-w-[44px] flex items-center justify-center p-2 text-slate-300 hover:text-white bg-white/5 hover:bg-white/10 border border-white/15 hover:border-[#E4A853]/40 rounded-xl transition-all cursor-pointer active:scale-95 focus:outline-none focus:ring-2 focus:ring-[#E4A853]/50"
+              title="Download HD Image"
+            >
+              <Download size={15} aria-hidden="true" />
+            </button>
           )}
         </div>
+      </section>
 
-        {/* Detailed Astronomical Analysis */}
-        <div ref={analysisRef} className="pt-4 border-t border-white/5 space-y-2">
-          <div className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-widest text-[#E4A853] font-semibold">
-            <Sparkles size={12} aria-hidden="true" />
-            <span>Astronomical Analysis</span>
+      {/* =========================================================================
+          6. SCIENTIFIC SUMMARY (Stacked Cards)
+          - Card 1: Key Insight
+          - Card 2: Scientific Notes (bullet points)
+          - Card 3: Mission Context
+          - Card layout improves readability and suits mobile vertical scrolling
+          ========================================================================= */}
+      <section ref={summaryRef} id="hero-scientific-summary-cards" className="space-y-3 pt-2">
+        
+        {/* Card 1: Key Insight */}
+        <div className="p-4 rounded-xl bg-white/[0.02] border border-white/10 hover:border-[#E4A853]/30 transition-colors shadow-sm text-left">
+          <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-[#E4A853] font-bold mb-2">
+            <BookOpen size={14} className="text-[#E4A853]" aria-hidden="true" />
+            <span>Key Insight</span>
           </div>
-          <p className="text-slate-300 text-sm sm:text-base font-light leading-relaxed font-sans">
-            {data.explanation}
+          <p className="text-slate-200 text-sm font-sans font-light leading-relaxed">
+            {summary.keyInsight}
           </p>
         </div>
-      </footer>
+
+        {/* Card 2: Scientific Notes */}
+        <div className="p-4 rounded-xl bg-white/[0.02] border border-white/10 hover:border-[#E4A853]/30 transition-colors shadow-sm text-left">
+          <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-[#E4A853] font-bold mb-2.5">
+            <ListFilter size={14} className="text-[#E4A853]" aria-hidden="true" />
+            <span>Scientific Notes</span>
+          </div>
+          <ul className="space-y-2 text-xs sm:text-sm font-sans text-slate-300 font-light leading-relaxed">
+            {summary.notes.map((note, idx) => (
+              <li key={idx} className="flex items-start gap-2">
+                <span className="text-[#E4A853] font-bold select-none">•</span>
+                <span>{note}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {/* Card 3: Mission Context */}
+        <div className="p-4 rounded-xl bg-white/[0.02] border border-white/10 hover:border-[#E4A853]/30 transition-colors shadow-sm text-left">
+          <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-[#E4A853] font-bold mb-2">
+            <Compass size={14} className="text-[#E4A853]" aria-hidden="true" />
+            <span>Mission Context</span>
+          </div>
+          <div className="space-y-1.5 text-xs font-mono text-slate-300">
+            <p>
+              <span className="text-slate-400">Array/Mission:</span>{' '}
+              <span className="text-white font-semibold">{summary.missionContext.instrumentOrMission}</span>
+            </p>
+            <p>
+              <span className="text-slate-400">Credit &amp; Copyright:</span>{' '}
+              <span className="text-slate-200">{summary.missionContext.credit}</span>
+            </p>
+            <p>
+              <span className="text-slate-400">Telemetry Stream:</span>{' '}
+              <span className="text-[#E4A853]">{summary.missionContext.observationType}</span>
+            </p>
+          </div>
+        </div>
+
+      </section>
+
+      {/* =========================================================================
+          7. LIVE TELEMETRY (Compact)
+          - Pulsing dot for "active"
+          - 4-5 lines max
+          - Strictly single-column layout (no horizontal layout that breaks mobile)
+          ========================================================================= */}
+      <section id="hero-compact-telemetry" className="p-4 rounded-xl bg-black/60 border border-emerald-500/30 text-left space-y-2 shadow-inner">
+        <div className="flex items-center gap-2">
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+          </span>
+          <span className="text-xs font-mono font-bold text-emerald-400 uppercase tracking-wider">
+            Live Telemetry ● Active
+          </span>
+        </div>
+
+        <div className="text-xs font-mono text-slate-300 space-y-1 pl-4 border-l border-emerald-500/30">
+          <p className="text-white font-semibold">JWST (NIRCam) &amp; Deep Space Relay</p>
+          <p className="text-slate-400">Core Temp: 6.2 K • DSN Link 300bps</p>
+          <p className="text-slate-400">Archival Logs: 11,380+ Records Active</p>
+        </div>
+      </section>
+
     </motion.article>
   );
 }
+
 
