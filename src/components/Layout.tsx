@@ -29,11 +29,16 @@ export default function Layout({ children, currentView, onNavigate, selectedDate
   }, [selectedDate]);
 
   return (
-    <div className="min-h-screen bg-[#050608] text-slate-100 flex flex-col items-center pt-4 sm:pt-8 md:pt-16 pb-6 px-3 sm:px-6 relative overflow-hidden">
+    <div className="min-h-screen bg-[#050608] text-slate-100 flex flex-col items-center pt-3 sm:pt-5 pb-6 px-3 sm:px-6 relative overflow-hidden">
       
       {/* Background radial gold dust glow & deep space ambient star field */}
       <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[900px] h-[450px] bg-[#E4A853]/6 blur-[140px] rounded-[100%] pointer-events-none -z-10" />
       <div className="fixed inset-0 pointer-events-none -z-10 opacity-30 bg-[radial-gradient(#E4A853_1px,transparent_1px)] [background-size:48px_48px]" />
+
+      {/* Top Floating Navigation Bar */}
+      <header className="sticky top-2 sm:top-4 z-40 w-full flex justify-center mb-6 sm:mb-8 px-2 sm:px-0 pointer-events-none">
+        <Navigation currentView={currentView} onNavigate={onNavigate} />
+      </header>
 
       {/* 🪐 Hero Header Banner - Hidden on Landing Page because Landing has its own premium hero */}
       {currentView !== 'landing' && (
@@ -142,11 +147,6 @@ export default function Layout({ children, currentView, onNavigate, selectedDate
           </div>
         </div>
       )}
-
-      {/* Mode Tabs */}
-      <div className="mb-6 sm:mb-10 w-full flex justify-center z-20 relative px-2 sm:px-0">
-        <Navigation currentView={currentView} onNavigate={onNavigate} />
-      </div>
 
       {/* Main Content Area */}
       <main className="w-full max-w-6xl flex flex-col items-center relative z-10 flex-1">
