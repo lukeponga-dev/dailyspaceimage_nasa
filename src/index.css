@@ -1,12 +1,25 @@
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400..700;1,400..700&family=JetBrains+Mono:wght@400;500&display=swap');
 @import "tailwindcss";
 
+:root {
+  --bg: #0A0A0A;
+  --surface: #111111;
+  --surface-light: #FFFFFF;
+  --border: #1E1E1E;
+  --text: #FFFFFF;
+  --text-secondary: #C7C7C7;
+
+  --accent: #4EAFFF;
+  --accent-glow: #00E5FF;
+
+  --radius: 12px;
+}
+
 @theme {
   --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
   --font-serif: "Playfair Display", Georgia, serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 
-  /* Custom luxury colors representing deep obsidian space and stellar gold/amber */
   --color-space-950: #050608;
   --color-space-900: #0C0E12;
   --color-space-800: #14171E;
@@ -20,6 +33,74 @@
 
 @layer base {
   body {
-    @apply bg-space-950 text-slate-100 font-sans tracking-wide antialiased selection:bg-stellar-500/20 selection:text-stellar-400;
+    background-color: var(--bg);
+    color: var(--text);
+    font-family: var(--font-sans);
+    margin: 0;
+    padding: 0;
   }
 }
+
+.card {
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+}
+
+.card-glow {
+  box-shadow: 0 0 20px rgba(0, 229, 255, 0.15);
+}
+
+.img-glow {
+  border-radius: var(--radius);
+  box-shadow: 0 0 25px rgba(78, 175, 255, 0.2);
+}
+
+.btn-primary {
+  background-color: var(--accent);
+  color: #000000;
+  font-weight: 600;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.btn-primary:hover {
+  background-color: var(--accent-glow);
+  box-shadow: 0 0 15px rgba(0, 229, 255, 0.4);
+}
+
+.btn-secondary {
+  background-color: transparent;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.btn-secondary:hover {
+  background-color: rgba(78, 175, 255, 0.1);
+}
+
+@keyframes fadeIn {
+  0% { opacity: 0; transform: translateY(10px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes glowPulse {
+  0% { box-shadow: 0 0 12px var(--accent-glow); }
+  50% { box-shadow: 0 0 24px var(--accent-glow); }
+  100% { box-shadow: 0 0 12px var(--accent-glow); }
+}
+
+.fade-in {
+  animation: fadeIn 0.4s ease-out;
+}
+
+.glow-pulse {
+  animation: glowPulse 2s infinite;
+}
+
