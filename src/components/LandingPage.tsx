@@ -7,11 +7,11 @@ import ImageExpansionOverlay from './ImageExpansionOverlay';
 
 interface LandingPageProps {
   onNavigate: (view: string) => void;
-  favoritesCount: number;
+  favorites: ApodData[];
   onSelectDate?: (date: string) => void;
 }
 
-export default function LandingPage({ onNavigate, favoritesCount, onSelectDate }: LandingPageProps) {
+export default function LandingPage({ onNavigate, favorites, onSelectDate }: LandingPageProps) {
   const [todayData, setTodayData] = useState<ApodData | null>(null);
   const [loading, setLoading] = useState(true);
   const [imageError, setImageError] = useState(false);
@@ -143,29 +143,45 @@ export default function LandingPage({ onNavigate, favoritesCount, onSelectDate }
         <canvas ref={canvasRef} className="w-full h-full" />
       </div>
 
-      {/* Main Hero Visual Greeting Card */}
-      <div className="relative rounded-2xl border border-[#E4A853]/20 bg-[#0C0E12]/90 backdrop-blur-xl p-8 md:p-12 shadow-[0_20px_50px_rgba(0,0,0,0.7)] overflow-hidden">
-        {/* Observatory Reticle Corners */}
-        <div className="absolute top-4 left-4 w-6 h-6 border-l-2 border-t-2 border-[#E4A853]/40 pointer-events-none" />
-        <div className="absolute top-4 right-4 w-6 h-6 border-r-2 border-t-2 border-[#E4A853]/40 pointer-events-none" />
-        <div className="absolute bottom-4 left-4 w-6 h-6 border-l-2 border-b-2 border-[#E4A853]/40 pointer-events-none" />
-        <div className="absolute bottom-4 right-4 w-6 h-6 border-r-2 border-b-2 border-[#E4A853]/40 pointer-events-none" />
+      {/* Main Hero Visual Greeting Card (Integrated with Today's APOD) */}
+      <div className="relative rounded-2xl border border-[#E4A853]/20 bg-[#0C0E12]/90 shadow-[0_20px_50px_rgba(0,0,0,0.7)] overflow-hidden min-h-[500px] flex flex-col justify-end">
+        {/* Background image preview */}
+        {!loading && todayData && todayData.media_type === 'image' && !imageError ? (
+          <img 
+            src={todayData.url} 
+            alt={todayData.title}
+            className="absolute inset-0 w-full h-full object-cover transition-transform duration-[20s] ease-out hover:scale-105 -z-10"
+            onError={() => setImageError(true)}
+            referrerPolicy="no-referrer"
+          />
+        ) : (
+          <div className="absolute inset-0 bg-gradient-to-br from-[#0C0E12] to-[#050608] -z-10" />
+        )}
+        
+        {/* Ambient gradients to ensure text readability */}
+        <div className="absolute inset-0 bg-gradient-to-t from-[#050608] via-[#050608]/70 to-transparent -z-10" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#050608]/90 via-[#050608]/50 to-transparent -z-10" />
 
-        <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+        {/* Observatory Reticle Corners */}
+        <div className="absolute top-4 left-4 w-6 h-6 border-l-2 border-t-2 border-[#E4A853]/40 pointer-events-none z-10" />
+        <div className="absolute top-4 right-4 w-6 h-6 border-r-2 border-t-2 border-[#E4A853]/40 pointer-events-none z-10" />
+        <div className="absolute bottom-4 left-4 w-6 h-6 border-l-2 border-b-2 border-[#E4A853]/40 pointer-events-none z-10" />
+        <div className="absolute bottom-4 right-4 w-6 h-6 border-r-2 border-b-2 border-[#E4A853]/40 pointer-events-none z-10" />
+
+        <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-end p-8 md:p-12">
           {/* Hero Left Copy */}
-          <div className="lg:col-span-7 space-y-6 text-left">
+          <div className="lg:col-span-8 space-y-6 text-left">
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#050608]/90 border border-[#E4A853]/35 text-[10px] font-mono font-semibold uppercase tracking-widest text-[#E4A853]">
               <Activity size={12} className="animate-pulse text-[#E4A853]" />
-              <span>Cosmic Station Ground Ingress</span>
+              <span>NASA Astronomy Picture of the Day</span>
             </div>
 
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-serif font-bold text-white tracking-tight leading-tight">
-              Embark on a <br />
-              <span className="italic font-light text-[#E4A853]">Stellar Voyage</span>
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-serif font-bold text-white tracking-tight leading-tight drop-shadow-md">
+              {loading ? 'Establishing Link...' : todayData?.title || 'Cosmic Station Ground Ingress'}
             </h1>
 
-            <p className="text-slate-300 text-base md:text-lg font-light tracking-wide leading-relaxed font-sans">
-              Welcome to the Observatory Vault. Seamlessly interface with live NASA telemetry arrays, discover cosmic anomalies through historical deep-space photography, and catalog wonders of the universe.
+            <p className="text-slate-300 text-base md:text-lg font-light tracking-wide leading-relaxed font-sans line-clamp-3 max-w-2xl drop-shadow-sm">
+              {loading ? 'Interfacing with deep-space telemetry arrays to retrieve today\'s stellar coordinates...' : todayData?.explanation || 'Welcome to the Observatory Vault. Interface with live NASA telemetry arrays, discover cosmic anomalies, and catalog wonders of the universe.'}
             </p>
 
             <div className="pt-2 flex flex-col sm:flex-row items-center gap-4">
@@ -175,64 +191,72 @@ export default function LandingPage({ onNavigate, favoritesCount, onSelectDate }
                 className="w-full sm:w-auto flex items-center justify-center gap-2.5 px-8 py-4 bg-[#E4A853] hover:bg-[#f3be73] text-[#050608] shadow-[0_0_25px_rgba(228,168,83,0.35)] rounded-sm text-sm font-bold tracking-wider uppercase transition-all duration-300 cursor-pointer active:scale-95 group"
               >
                 <Rocket size={15} className="group-hover:translate-x-1 transition-transform" />
-                Launch Explore Array
+                Explore Today's Image
               </button>
 
               <button
                 type="button"
                 onClick={() => onNavigate('discover')}
-                className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-4 bg-transparent border border-[#E4A853]/50 text-[#E4A853] hover:bg-[#E4A853]/10 rounded-sm text-sm font-bold tracking-wider uppercase transition-all duration-300 cursor-pointer active:scale-95"
+                className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-4 bg-[#050608]/50 backdrop-blur-md border border-[#E4A853]/50 text-[#E4A853] hover:bg-[#E4A853]/10 rounded-sm text-sm font-bold tracking-wider uppercase transition-all duration-300 cursor-pointer active:scale-95"
               >
-                Search Galaxy Gallery
+                <Compass size={15} />
+                Gallery
+              </button>
+
+              <button
+                type="button"
+                onClick={() => onNavigate('favorites')}
+                className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-4 bg-[#050608]/50 backdrop-blur-md border border-white/20 text-slate-300 hover:text-[#E4A853] hover:border-[#E4A853]/50 rounded-sm text-sm font-bold tracking-wider uppercase transition-all duration-300 cursor-pointer active:scale-95"
+              >
+                <Star size={15} />
+                Saved
               </button>
             </div>
           </div>
 
-          {/* Hero Right: Live Telemetry Indicator Widget */}
-          <div className="lg:col-span-5 w-full flex justify-center lg:justify-end">
-            <div className="w-full max-w-sm rounded-xl border border-white/5 bg-[#050608]/90 p-6 space-y-6 shadow-2xl relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-24 h-24 bg-[#E4A853]/5 blur-2xl rounded-full" />
+          {/* Hero Right: Real Status Card Widget */}
+          <div className="lg:col-span-4 w-full flex justify-center lg:justify-end">
+            <div className="w-full rounded-xl border border-white/10 bg-[#050608]/95 backdrop-blur-xl p-5 space-y-5 shadow-2xl relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-24 h-24 bg-[#3DFF8C]/5 blur-2xl rounded-full pointer-events-none" />
               
               <div className="flex items-center justify-between pb-3 border-b border-white/5">
-                <span className="text-[10px] font-mono text-[#E4A853] uppercase tracking-wider font-semibold flex items-center gap-1.5">
-                  <Globe size={11} className="animate-spin [animation-duration:12s]" />
-                  Observatory Status
+                <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider font-semibold flex items-center gap-1.5">
+                  <Activity size={12} className="text-[#3DFF8C]" />
+                  Telemetry
                 </span>
-                <span className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-[9px] font-mono uppercase tracking-widest text-emerald-400 font-bold">
+                <span className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#3DFF8C]/10 border border-[#3DFF8C]/30 text-[9px] font-mono uppercase tracking-widest text-[#3DFF8C] font-bold shadow-[0_0_10px_rgba(61,255,140,0.2)]">
                   <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#3DFF8C] opacity-75" />
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-[#3DFF8C]" />
                   </span>
                   Online
                 </span>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <span className="text-[9px] font-mono text-slate-500 uppercase tracking-widest block">Active Sensor</span>
-                  <span className="text-xs font-semibold text-slate-200 block">JWST (NIRCam)</span>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between bg-white/5 p-2 rounded-lg border border-white/5">
+                  <div className="flex items-center gap-2 text-slate-400">
+                    <Eye size={12} />
+                    <span className="text-[9px] font-mono uppercase tracking-widest">Active Sensor</span>
+                  </div>
+                  <span className="text-xs font-semibold text-slate-200">JWST (NIRCam)</span>
                 </div>
-                <div className="space-y-1">
-                  <span className="text-[9px] font-mono text-slate-500 uppercase tracking-widest block">Core Temp</span>
-                  <span className="text-xs font-semibold text-[#E4A853] block">6.2 Kelvin</span>
+                
+                <div className="flex items-center justify-between bg-white/5 p-2 rounded-lg border border-white/5">
+                  <div className="flex items-center gap-2 text-slate-400">
+                    <Sparkles size={12} />
+                    <span className="text-[9px] font-mono uppercase tracking-widest">Core Temp</span>
+                  </div>
+                  <span className="text-xs font-semibold text-[#E4A853]">6.2 Kelvin</span>
                 </div>
-                <div className="space-y-1">
-                  <span className="text-[9px] font-mono text-slate-500 uppercase tracking-widest block">Archive Depth</span>
-                  <span className="text-xs font-semibold text-slate-200 block">11,380+ Logs</span>
+                
+                <div className="flex items-center justify-between bg-white/5 p-2 rounded-lg border border-white/5">
+                  <div className="flex items-center gap-2 text-slate-400">
+                    <Globe size={12} />
+                    <span className="text-[9px] font-mono uppercase tracking-widest">Link State</span>
+                  </div>
+                  <span className="text-xs font-semibold text-[#3DFF8C]">Established</span>
                 </div>
-                <div className="space-y-1">
-                  <span className="text-[9px] font-mono text-slate-500 uppercase tracking-widest block">Telemetry Link</span>
-                  <span className="text-xs font-semibold text-slate-200 block">Established</span>
-                </div>
-              </div>
-
-              {/* Saved Vault count highlight */}
-              <div className="p-3 bg-[#E4A853]/5 border border-[#E4A853]/20 rounded-lg flex items-center justify-between text-xs font-mono">
-                <div className="flex items-center gap-2">
-                  <Star size={13} className="text-[#E4A853] fill-[#E4A853]/30" />
-                  <span className="text-slate-300">Saved Wonders Vault</span>
-                </div>
-                <span className="text-sm font-serif font-bold text-[#E4A853]">{favoritesCount} Curated</span>
               </div>
             </div>
           </div>
@@ -255,87 +279,64 @@ export default function LandingPage({ onNavigate, favoritesCount, onSelectDate }
         </button>
       </div>
 
-      {/* Today's Featured Spotlight preview */}
+      {/* Saved Wonders Preview Grid */}
       <div ref={spotlightRef} className="space-y-6 text-left pt-6">
         <div className="flex items-center justify-between border-b border-white/5 pb-3">
           <div className="space-y-1">
-            <span className="text-[10px] font-mono text-[#E4A853] uppercase tracking-widest font-bold">Today's Highlight Coordinates</span>
-            <h3 className="text-2xl font-serif text-slate-100 font-medium">Stellar Spotlight</h3>
+            <span className="text-[10px] font-mono text-[#E4A853] uppercase tracking-widest font-bold">Your Curated Archive</span>
+            <h3 className="text-2xl font-serif text-slate-100 font-medium">Saved Wonders</h3>
           </div>
-          <div className="flex items-center gap-3">
-            {todayData && todayData.media_type === 'image' && (
-              <button
-                type="button"
-                onClick={() => setShowOverlay(true)}
-                className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#E4A853]/10 border border-[#E4A853]/35 text-xs font-mono text-[#E4A853] hover:bg-[#E4A853]/20 transition-colors cursor-pointer"
-              >
-                <Maximize2 size={12} />
-                <span>Expand Detail HD</span>
-              </button>
-            )}
-            <button 
-              type="button"
-              onClick={handleGoToToday}
-              className="flex items-center gap-1 text-xs font-mono text-[#E4A853] hover:text-[#ffd99e] transition-colors cursor-pointer group"
-            >
-              Enter Observatory
-              <ChevronRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
-            </button>
-          </div>
+          <button 
+            type="button"
+            onClick={() => onNavigate('favorites')}
+            className="flex items-center gap-1 text-xs font-mono text-[#E4A853] hover:text-[#ffd99e] transition-colors cursor-pointer group"
+          >
+            View Entire Vault
+            <ChevronRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
+          </button>
         </div>
 
-        {loading ? (
-          <div className="h-[280px] w-full rounded-lg border border-white/5 bg-[#0C0E12] flex items-center justify-center">
-            <span className="text-xs font-mono text-[#E4A853] animate-pulse">Establishing Deep Space Data Link...</span>
-          </div>
-        ) : todayData ? (
-          <div 
-            onClick={() => {
-              if (todayData.media_type === 'image') {
-                setShowOverlay(true);
-              } else {
-                handleGoToToday();
-              }
-            }}
-            className="group/spotlight relative w-full h-[320px] rounded-xl overflow-hidden border border-[#E4A853]/20 shadow-2xl cursor-zoom-in flex flex-col justify-end p-6 md:p-8"
-          >
-            {/* Background image preview */}
-            {todayData.media_type === 'image' && !imageError ? (
-              <img 
-                src={todayData.url} 
-                alt={todayData.title}
-                className="absolute inset-0 w-full h-full object-cover group-hover/spotlight:scale-105 transition-transform duration-[8s] ease-out -z-10"
-                onError={() => setImageError(true)}
-              />
-            ) : (
-              <div className="absolute inset-0 bg-gradient-to-br from-[#0C0E12] to-[#050608] -z-10" />
-            )}
-            
-            {/* Ambient gradients */}
-            <div className="absolute inset-0 bg-gradient-to-t from-[#050608]/95 via-[#050608]/60 to-transparent -z-10" />
-            
-            {/* Hover Expand Banner */}
-            <div className="absolute top-4 right-4 opacity-0 group-hover/spotlight:opacity-100 transition-opacity">
-              <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/80 border border-[#E4A853]/50 text-[11px] font-mono text-[#E4A853] shadow-lg backdrop-blur-md">
-                <Maximize2 size={12} /> Click to Expand Full-Screen
-              </span>
-            </div>
-
-            <div className="max-w-2xl space-y-2">
-              <span className="text-[9px] font-mono text-[#E4A853] uppercase tracking-widest font-bold">
-                Astronomical Target • {todayData.date}
-              </span>
-              <h4 className="text-2xl md:text-3xl font-serif text-white tracking-wide leading-tight group-hover/spotlight:text-[#E4A853] transition-colors">
-                {todayData.title}
-              </h4>
-              <p className="text-xs md:text-sm text-slate-300 font-light font-sans line-clamp-2 max-w-xl opacity-90">
-                {todayData.explanation}
-              </p>
+        {favorites.length === 0 ? (
+          <div className="h-[200px] w-full rounded-lg border border-white/5 bg-[#0C0E12] flex items-center justify-center text-slate-500">
+            <div className="text-center space-y-2">
+              <Star size={24} className="mx-auto opacity-20" />
+              <span className="text-xs font-mono block">Your vault is currently empty.</span>
+              <span className="text-[10px] font-sans block opacity-70">Catalog images from the gallery to build your archive.</span>
             </div>
           </div>
         ) : (
-          <div className="h-[120px] w-full rounded-lg border border-white/5 bg-[#0C0E12] flex items-center justify-center text-slate-500">
-            <span className="text-xs font-mono">Spotlight telemetry offline. Enter live view below.</span>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+            {favorites.slice(0, 4).map(item => (
+              <div 
+                key={item.date}
+                onClick={() => onSelectDate && onSelectDate(item.date)}
+                className="group relative w-full h-[200px] rounded-xl overflow-hidden border border-white/5 shadow-lg cursor-pointer flex flex-col justify-end p-4 hover:border-[#E4A853]/40 transition-colors"
+              >
+                {item.media_type === 'image' ? (
+                  <img 
+                    src={item.url} 
+                    alt={item.title}
+                    className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-[4s] ease-out -z-10"
+                    referrerPolicy="no-referrer"
+                  />
+                ) : (
+                  <div className="absolute inset-0 bg-gradient-to-br from-[#1a1d24] to-[#050608] -z-10 flex items-center justify-center">
+                    <span className="text-[10px] font-mono text-slate-500">Video Media</span>
+                  </div>
+                )}
+                
+                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent -z-10" />
+                
+                <div className="space-y-1">
+                  <span className="text-[9px] font-mono text-[#E4A853] uppercase tracking-widest block">
+                    {item.date}
+                  </span>
+                  <h4 className="text-sm font-serif text-white leading-tight line-clamp-2 group-hover:text-[#E4A853] transition-colors">
+                    {item.title}
+                  </h4>
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </div>

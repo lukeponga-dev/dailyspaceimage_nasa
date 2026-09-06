@@ -11,6 +11,7 @@ import ErrorBoundary from './components/ErrorBoundary';
 import Gallery from './components/Gallery';
 import Favorites from './components/Favorites';
 import LandingPage from './components/LandingPage';
+import About from './components/About';
 import { getEasternDate } from './utils/dateUtils';
 import { ApodData } from './types';
 
@@ -62,7 +63,7 @@ export default function App() {
         return (
           <LandingPage 
             onNavigate={setCurrentView}
-            favoritesCount={favorites.length}
+            favorites={favorites}
             onSelectDate={handleSelectDate}
           />
         );
@@ -92,6 +93,8 @@ export default function App() {
             onSelectImage={handleSelectDate}
           />
         );
+      case 'about':
+        return <About />;
       default: 
         return (
           <NasaApod 

@@ -33,10 +33,11 @@ export default function Navigation({ onNavigate, currentView }: Props) {
   const [hoveredMode, setHoveredMode] = useState<ModeItem | null>(null);
 
   const modes: ModeItem[] = [
-    { id: 'landing', label: 'Home', description: 'Mission overview, archive stats & stellar spotlight', icon: Sparkles },
-    { id: 'today', label: 'Explore', description: 'Daily NASA APOD observation & astronomical analysis', icon: Eye },
-    { id: 'discover', label: 'Voyage', description: 'Chronological feed, date filtering & random discovery', icon: Compass },
-    { id: 'favorites', label: 'Saved', description: 'Your personal vault of bookmarked cosmic phenomena', icon: Star },
+    { id: 'today', label: 'Today', description: 'Explore today\'s image', icon: Eye },
+    { id: 'discover', label: 'Gallery', description: 'NASA deep-space image archive', icon: Compass },
+    { id: 'favorites', label: 'Saved', description: 'Your saved APOD entries', icon: Star },
+    { id: 'landing', label: 'Telemetry', description: 'Live mission status & stats', icon: Sparkles },
+    { id: 'about', label: 'About', description: 'Mission information & credits', icon: Compass },
   ];
 
   const activeMode = modes.find(m => m.id === currentView);
