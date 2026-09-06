@@ -1,34 +1,43 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400..700;1,400..700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 @import "tailwindcss";
 
 :root {
-  --bg: #0A0A0A;
-  --surface: #111111;
-  --surface-light: #FFFFFF;
-  --border: #1E1E1E;
-  --text: #FFFFFF;
-  --text-secondary: #C7C7C7;
+  --bg: #0A0A0C;
+  --surface: #111113;
+  --surface-secondary: #1A1A1D;
+  --border: #2A2A2C;
+  
+  --text: #F5F5F7;
+  --text-secondary: #C4C4CC;
+  --telemetry: #7FAFFF;
 
-  --accent: #4EAFFF;
-  --accent-glow: #00E5FF;
+  --accent: #4DA3FF;
+  --accent-violet: #A78BFA;
+  --accent-active: #2F7CE0;
+  --disabled: #2A2A2C;
 
-  --radius: 12px;
+  --ion-glow: 0px 0px 18px rgba(77, 163, 255, 0.35);
+  --violet-glow: 0px 0px 22px rgba(167, 139, 250, 0.28);
+  --soft-overlay: rgba(0, 0, 0, 0.45);
+
+  --gradient-ion-violet: linear-gradient(135deg, #4DA3FF 0%, #A78BFA 100%);
+  --gradient-nebula-mist: linear-gradient(180deg, rgba(10, 10, 12, 0) 0%, rgba(10, 10, 12, 0.8) 100%);
+
+  --radius: 10px;
 }
 
 @theme {
   --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
-  --font-serif: "Playfair Display", Georgia, serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 
-  --color-space-950: #050608;
-  --color-space-900: #0C0E12;
-  --color-space-800: #14171E;
-  --color-space-700: #1C212B;
-  --color-space-600: #252B38;
-  
-  --color-stellar-400: #F3C47B;
-  --color-stellar-500: #E4A853;
-  --color-stellar-600: #C98A39;
+  --color-deep-void: #0A0A0C;
+  --color-dark-matter: #111113;
+  --color-subspace: #1A1A1D;
+  --color-ion-blue: #4DA3FF;
+  --color-plasma-violet: #A78BFA;
+  --color-stellar-white: #F5F5F7;
+  --color-orbit-silver: #C4C4CC;
+  --color-telemetry-blue: #7FAFFF;
 }
 
 @layer base {
@@ -46,61 +55,87 @@
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 1.5rem;
+  transition: all 0.25s ease;
+}
+
+.card:hover {
+  box-shadow: var(--ion-glow);
+  border-color: rgba(77, 163, 255, 0.3);
 }
 
 .card-glow {
-  box-shadow: 0 0 20px rgba(0, 229, 255, 0.15);
+  box-shadow: var(--ion-glow);
 }
 
 .img-glow {
   border-radius: var(--radius);
-  box-shadow: 0 0 25px rgba(78, 175, 255, 0.2);
+  box-shadow: var(--violet-glow);
 }
 
 .btn-primary {
   background-color: var(--accent);
-  color: #000000;
+  color: #0A0A0C;
   font-weight: 600;
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
+  padding: 0.55rem 1.25rem;
+  border-radius: var(--radius);
   transition: all 0.2s ease;
 }
 
 .btn-primary:hover {
-  background-color: var(--accent-glow);
-  box-shadow: 0 0 15px rgba(0, 229, 255, 0.4);
+  background-color: #6bb3ff;
+  box-shadow: var(--ion-glow);
+}
+
+.btn-primary:active {
+  background-color: var(--accent-active);
 }
 
 .btn-secondary {
-  background-color: transparent;
-  border: 1px solid var(--accent);
-  color: var(--accent);
-  font-weight: 500;
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
+  background-color: var(--accent-violet);
+  color: #0A0A0C;
+  font-weight: 600;
+  padding: 0.55rem 1.25rem;
+  border-radius: var(--radius);
   transition: all 0.2s ease;
 }
 
 .btn-secondary:hover {
-  background-color: rgba(78, 175, 255, 0.1);
+  background-color: #b8a2fc;
+  box-shadow: var(--violet-glow);
+}
+
+.btn-ghost {
+  background-color: transparent;
+  border: 1px solid rgba(245, 245, 247, 0.12);
+  color: var(--text);
+  font-weight: 500;
+  padding: 0.55rem 1.25rem;
+  border-radius: var(--radius);
+  transition: all 0.2s ease;
+}
+
+.btn-ghost:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+  border-color: rgba(77, 163, 255, 0.4);
+  color: var(--accent);
 }
 
 @keyframes fadeIn {
-  0% { opacity: 0; transform: translateY(10px); }
+  0% { opacity: 0; transform: translateY(8px); }
   100% { opacity: 1; transform: translateY(0); }
 }
 
-@keyframes glowPulse {
-  0% { box-shadow: 0 0 12px var(--accent-glow); }
-  50% { box-shadow: 0 0 24px var(--accent-glow); }
-  100% { box-shadow: 0 0 12px var(--accent-glow); }
+@keyframes ionPulse {
+  0% { box-shadow: 0 0 12px rgba(77, 163, 255, 0.3); }
+  50% { box-shadow: 0 0 24px rgba(77, 163, 255, 0.5); }
+  100% { box-shadow: 0 0 12px rgba(77, 163, 255, 0.3); }
 }
 
 .fade-in {
   animation: fadeIn 0.4s ease-out;
 }
 
-.glow-pulse {
-  animation: glowPulse 2s infinite;
+.ion-pulse {
+  animation: ionPulse 2.5s infinite;
 }
 
