@@ -77,9 +77,9 @@ App will be available at:
 
 ## Project Structure
 
-    api/
-      apod.ts
     src/
+      api/
+        apod.ts
       App.tsx
       main.tsx
       index.css
