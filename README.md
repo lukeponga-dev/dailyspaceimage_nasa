@@ -1,149 +1,141 @@
 # NASA Daily Space Image Viewer
 
-A modern, image‑focused web app for browsing NASA’s Astronomy Picture of the Day (APOD). Built with Next.js, React, Tailwind CSS, and optimized for Vercel deployments.
+![React](https://img.shields.io/badge/React-18-blue)
+![Vite](https://img.shields.io/badge/Vite-5-purple)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-blue)
+![TailwindCSS](https://img.shields.io/badge/TailwindCSS-3-38BDF8)
+![NASA-APOD](https://img.shields.io/badge/NASA-APOD-orange)
+![Vercel](https://img.shields.io/badge/Deploy-Vercel-black)
+![License: MIT](https://img.shields.io/badge/License-MIT-green)
+![Status](https://img.shields.io/badge/Status-Active-success)
+
+A modern, fast, and clean viewer for NASA’s Astronomy Picture of the Day (APOD). <br> Built with React + Vite, TypeScript, Tailwind CSS, and NASA’s APOD API.
 
 ---
 
-## 🚀 Features
+## Features
 
-- Daily NASA APOD fetch (HD + standard image support)
-- Date selector to browse historical APOD entries
-- Random image generator
-- HD modal viewer with blur‑up loading
-- Responsive gallery grid
-- Skeleton loaders for smooth perceived performance
-- Error boundaries for API failures, invalid dates, and rate limits
-- Download button for HD images
-- Production‑safe caching using Next.js fetch options
-
----
-
-## 🛰 NASA APOD API
-
-**This app uses the official NASA APOD API:**
-
-Endpoint: `https://api.nasa.gov/planetary/apod`
-
-**Required params:**
-
-`api_key — your NASA API key`  
-`date — ISO date string (YYYY-MM-DD)`
-
-**Response fields used:**
-
-`title`  
-`explanation`  
-`url (standard image)`  
-`hdurl (high‑resolution image)`  
-`media_type`  
-`date`
-
-**Common error cases:**
-
-`Invalid date format`  
-`Dates before APOD launch (1995‑06‑16)`  
-`Rate limits (429)`  
-`Missing API key`
+- Daily APOD image or video  
+- HD image modal viewer  
+- Historical APOD browsing  
+- Recent APOD gallery  
+- 24-hour caching  
+- Fully responsive UI  
+- Tailwind CSS design system  
+- Secure API key handling  
 
 ---
 
-## 📁 Project Structure
+## Tech Stack
 
-```nano
-├── src/
-│   ├── page.tsx              // Main APOD viewer
-│   ├── components/
-│   │   ├── ApodHero.tsx      // Daily hero image + metadata
-│   │   ├── ApodModal.tsx     // HD modal viewer
-│   │   ├── Gallery.tsx       // Recent images grid
-│   │   ├── DatePicker.tsx    // Calendar selector
-│   │   └── Skeleton.tsx      // Loading placeholders
-│   ├── lib/
-│   │   └── fetchApod.ts          // Shared APOD fetch logic
-│   ├── public/
-│   │   └── icons/                // UI icons
-│   ├── styles/
-│   │   └── globals.css
-├── api/
-│  └── apod.ts           // Server-side APOD fetcher
-└── README.md
-```
+- React 18  
+- Vite 5  
+- TypeScript  
+- Tailwind CSS  
+- NASA APOD API  
+- Vercel Deployment  
 
 ---
 
-## ⚙️ Installation
+## Getting Started
+
+### 1. Clone the repository
 
 ```bash
-git clone https://github.com/<your-org>/dailyspaceimage_nasa.git
+git clone https://github.com/lukeponga-dev/dailyspaceimage_nasa.git  
 cd dailyspaceimage_nasa
+```
+
+### 2. Install dependencies
+
+```bash
 npm install
 ```
+### 3. Configure environment variables
 
-Create a `.env.local` file:
-
-```code
-NASA_API_KEY=YOUR_KEY_HERE
+```bash
+cp .env.example .env
 ```
 
-## 🧪 Development
+Add your NASA API key:
+
+```code
+NASA_API_KEY=your_key_here
+```
+
+### 4. Run the development server
 
 ```bash
 npm run dev
 ```
-<p>Runs the local Next.js dev server at <code>http://localhost:3000</code>.</p>
 
-## 🏗 Production Build
+App will be available at:
 
-```bash
-npm run build
-npm start
+`http://localhost:5173`
+
+---
+
+## Project Structure
+
+```nano
+api/
+  apod.ts
+src/
+  App.tsx
+  main.tsx
+  index.css
+  types.ts
+
+index.html  
+package.json  
+tsconfig.json  
+vite.config.ts  
+vercel.json  
+.env.example`
 ```
 
-## 📦 Vercel Deployment Notes
+---
 
-- Ensure npm run lint and npm run typecheck exist — Vercel uses them for CI checks.
-- GitHub integration will show deployment status per commit.
-- Use Next.js fetch caching for APOD requests:
-`fetch(url, { next: { revalidate: 86400 } }) // 24h cache`
-- Avoid client-side API calls for the daily APOD — server-side fetch is more stable and avoids exposing your API key.
-- Use Vercel’s built-in image optimization for APOD images when possible.
+## NASA API Usage
 
-## 🖼 UI/UX Patterns Used
+Endpoint:  
+https://api.nasa.gov/planetary/apod
 
-- Blur-up loading for HD modal images
-- Responsive grid using Tailwind’s grid-cols-* utilities
-- Skeleton loaders for hero + gallery
-- Safe fallback when APOD is a video (YouTube embed)
-- Accessible modal with keyboard controls
+Fields used:
+- title  
+- explanation  
+- url  
+- hdurl  
+- media_type  
+- date  
 
-## 🔧 Core Components
+---
 
-`ApodHero.tsx`
+## Deployment (Vercel)
 
-Displays the daily APOD with title, explanation, and HD modal trigger.
+1. Push to GitHub  
+2. Connect repo to Vercel  
+3. Add NASA_API_KEY in Vercel Environment Variables  
+4. Deploy  
 
-`ApodModal.tsx`
+---
 
-Full-screen HD viewer with progressive loading + download button.
+## Contributing
 
-`Gallery.tsx`
+1. Fork the repo  
+2. Create a feature branch  
+3. Commit changes  
+4. Open a pull request  
 
-Shows recent APOD entries using a responsive grid.
+---
 
-`DatePicker.tsx`
+## Support
 
-ISO date selector with validation + fetch trigger.
+Open an issue or email:  
+developmentdesignsltd@gmail.com
 
-## 🛡 Error Handling
+---
 
-`Invalid date → user-friendly message`
+## License
 
-`API offline → retry button`
-
-`Rate limit → fallback to cached APOD`
-
-`Missing HD image → fallback to standard url`
-
-## 📜 License
-
-MIT — free to use, modify, and deploy.
+MIT License © 2026 Luke Ponga
