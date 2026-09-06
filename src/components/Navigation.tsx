@@ -20,7 +20,7 @@ export default function Navigation({ onNavigate, currentView }: Props) {
   ];
 
   return (
-    <nav className="pointer-events-auto bg-[#050608]/90 backdrop-blur-2xl border border-white/5 py-3 px-4 md:px-6 rounded-full flex justify-between items-center shadow-[0_15px_45px_rgba(0,0,0,0.85),0_0_30px_rgba(228,168,83,0.06)] relative overflow-hidden max-w-lg w-full mx-auto">
+    <nav className="pointer-events-auto bg-[#050608]/90 backdrop-blur-2xl border border-white/10 p-1.5 md:py-3 md:px-6 rounded-full flex justify-between items-center shadow-[0_15px_45px_rgba(0,0,0,0.85),0_0_30px_rgba(228,168,83,0.08)] relative overflow-hidden max-w-sm sm:max-w-md md:max-w-lg w-full mx-auto">
       
       {/* Desktop Tabs View (hidden md:flex) */}
         <div className="hidden md:flex items-center justify-center w-full gap-4 text-sm font-sans select-none">
@@ -53,27 +53,27 @@ export default function Navigation({ onNavigate, currentView }: Props) {
           })}
         </div>
 
-        {/* Mobile Chips View (flex md:hidden) */}
-        <div className="flex md:hidden items-center justify-center w-full overflow-x-auto gap-3 scrollbar-none py-1">
-          {modes.map((mode) => {
-            const isActive = currentView === mode.id;
-            return (
-              <button
-                key={mode.id}
-                onClick={() => onNavigate(mode.id)}
-                className={`
-                  whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-semibold tracking-wide transition-all duration-300 cursor-pointer outline-none focus:outline-none flex-shrink-0
-                  ${isActive 
-                    ? 'text-[#E4A853] bg-[#E4A853]/10 border border-[#E4A853]/40 shadow-[0_0_12px_rgba(228,168,83,0.15)]' 
-                    : 'text-white/60 bg-white/5 border border-white/5 hover:text-white hover:bg-white/10'
-                  }
-                `}
-              >
-                {mode.label}
-              </button>
-            );
-          })}
-        </div>
+      {/* Mobile Segmented Control View (flex md:hidden) */}
+      <div className="grid grid-cols-4 w-full gap-1 p-0.5 select-none md:hidden">
+        {modes.map((mode) => {
+          const isActive = currentView === mode.id;
+          return (
+            <button
+              key={mode.id}
+              onClick={() => onNavigate(mode.id)}
+              className={`
+                relative min-h-[44px] flex items-center justify-center rounded-full text-xs font-semibold tracking-tight transition-all duration-300 cursor-pointer outline-none focus:outline-none px-2 py-2
+                ${isActive 
+                  ? 'text-[#E4A853] bg-[#E4A853]/15 border border-[#E4A853]/40 shadow-[0_0_12px_rgba(228,168,83,0.2)] font-bold' 
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-white/5 border border-transparent active:bg-white/10'
+                }
+              `}
+            >
+              <span className="truncate">{mode.label}</span>
+            </button>
+          );
+        })}
+      </div>
 
       </nav>
   );
