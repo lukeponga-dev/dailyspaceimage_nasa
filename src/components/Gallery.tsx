@@ -28,6 +28,7 @@ import { Search, Shuffle, Calendar, Star, Maximize2, Video, ArrowUpDown, AlertCi
 import { ApodData } from '../types';
 import { fetchApodRange, fetchRandomApods } from '../lib/fetchApod';
 import { getEasternDate, addDays, formatDate } from '../utils/dateUtils';
+import { formatCategoryName } from '../lib/apodClassifier';
 import { GalleryGridSkeleton } from './Skeleton';
 import ApodModal from './ApodModal';
 
@@ -307,13 +308,20 @@ export default function Gallery({
                     />
                   )}
 
-                  {/* Observation Date Stamp */}
-                  <time 
-                    dateTime={item.date}
-                    className="absolute top-2 left-2 px-2 py-0.5 rounded bg-black/75 border border-white/10 text-[#E4A853] text-[10px] font-mono font-semibold"
-                  >
-                    {formatDate(item.date)}
-                  </time>
+                  {/* Observation Date Stamp & Category Badge */}
+                  <div className="absolute top-2 left-2 flex flex-col gap-1 items-start pointer-events-none">
+                    <time 
+                      dateTime={item.date}
+                      className="px-2 py-0.5 rounded bg-black/75 border border-white/10 text-[#E4A853] text-[10px] font-mono font-semibold"
+                    >
+                      {formatDate(item.date)}
+                    </time>
+                    {item.category && (
+                      <span className="px-1.5 py-0.5 rounded bg-black/80 border border-[#E4A853]/30 text-[#FFD700] text-[9px] font-mono uppercase tracking-wider">
+                        {formatCategoryName(item.category)}
+                      </span>
+                    )}
+                  </div>
 
                   {/* Favorite Toggle Action */}
                   <button

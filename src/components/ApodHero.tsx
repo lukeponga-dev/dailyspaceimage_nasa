@@ -45,6 +45,10 @@ import { motion } from 'motion/react';
 import { ApodData } from '../types';
 import { formatDate } from '../utils/dateUtils';
 import { parseScientificSummary } from '../utils/textUtils';
+import { buildApodTelemetry } from '../lib/apodClassifier';
+import CategoryBadge from './CategoryBadge';
+import DistanceDisplay from './DistanceDisplay';
+import TelemetryPanel from './TelemetryPanel';
 
 interface ApodHeroProps {
   data: ApodData;
@@ -75,6 +79,20 @@ export default function ApodHero({
   const summary = useMemo(() => {
     return parseScientificSummary(data.explanation, data.title, data.copyright, data.date, data.media_type);
   }, [data.explanation, data.title, data.copyright, data.date, data.media_type]);
+
+  // Compute or extract astrometric classification & distance telemetry
+  const telemetry = useMemo(() => {
+    if (data.category && data.confidence !== undefined && data.distance) {
+      return {
+        category: data.category,
+        confidence: data.confidence,
+        matchedKeywords: data.matchedKeywords || [],
+        distanceLightYears: data.distanceLightYears ?? null,
+        distance: data.distance
+      };
+    }
+    return buildApodTelemetry({ title: data.title, explanation: data.explanation });
+  }, [data.title, data.explanation, data.category, data.confidence, data.matchedKeywords, data.distanceLightYears, data.distance]);
 
   // Listen for native fullscreen changes
   useEffect(() => {
@@ -304,6 +322,21 @@ export default function ApodHero({
           - Share and Download actions within thumb reach
           ========================================================================= */}
       <section id="hero-title-actions-section" className="space-y-3 pt-2">
+        {/* Astrometric Classification & Distance Header Badges */}
+        <div className="flex flex-wrap items-center gap-2">
+          <CategoryBadge
+            category={telemetry.category}
+            confidence={telemetry.confidence}
+            showConfidence
+            size="md"
+          />
+          <DistanceDisplay
+            distance={telemetry.distance}
+            distanceLightYears={telemetry.distanceLightYears}
+            variant="inline"
+          />
+        </div>
+
         <h1 className="text-xl sm:text-2xl md:text-3xl font-serif font-bold text-white tracking-tight leading-snug">
           {data.title}
         </h1>
@@ -430,40 +463,17 @@ export default function ApodHero({
       </section>
 
       {/* =========================================================================
-          5. TELEMETRY MOTION (Multi-ring pulsing dot & dynamic data stream)
+          5. TELEMETRY PANEL (Live radar pulse, category badge, and multi-unit distance)
           ========================================================================= */}
-      <section id="hero-compact-telemetry" className="p-4 sm:p-5 rounded-xl bg-black/70 border border-emerald-500/35 text-left space-y-3 shadow-inner relative overflow-hidden">
-        {/* Ambient subtle green telemetry background flare */}
-        <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 blur-2xl rounded-full pointer-events-none" />
-
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            {/* Multi-ring Pulsing Radar Motion Indicator */}
-            <span className="relative flex h-3 w-3 shrink-0 items-center justify-center">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-80 [animation-duration:1.5s]" />
-              <span className="animate-ping absolute inline-flex h-6 w-6 rounded-full bg-emerald-500/30 opacity-50 [animation-duration:2.5s]" />
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500 shadow-[0_0_8px_#10B981]" />
-            </span>
-            <span className="text-xs font-mono font-bold text-emerald-400 uppercase tracking-wider">
-              Live Telemetry Active
-            </span>
-          </div>
-
-          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-mono text-emerald-400">
-            <ActivityIcon size={12} className="animate-pulse" />
-            <span>300 bps</span>
-          </div>
-        </div>
-
-        <div className="text-xs font-mono text-slate-300 space-y-1.5 pl-4 border-l-2 border-emerald-500/40">
-          <p className="text-white font-semibold flex items-center justify-between">
-            <span>JWST (NIRCam) &amp; Deep Space Array</span>
-            <span className="text-emerald-400 text-[10px] font-normal">LOCK ESTABLISHED</span>
-          </p>
-          <p className="text-slate-400">Core Temp: <span className="text-[#FFD700] font-bold">6.2 Kelvin</span> • DSN Link 300bps Active</p>
-          <p className="text-slate-400">Archival Logs: <span className="text-slate-200 font-semibold">11,380+</span> Validated Records</p>
-        </div>
-      </section>
+      <TelemetryPanel
+        category={telemetry.category}
+        confidence={telemetry.confidence}
+        matchedKeywords={telemetry.matchedKeywords}
+        distanceLightYears={telemetry.distanceLightYears}
+        distance={telemetry.distance}
+        isLive={true}
+        carrierRate="300 bps"
+      />
 
     </motion.article>
   );

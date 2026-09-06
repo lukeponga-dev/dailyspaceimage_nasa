@@ -1,3 +1,17 @@
+export interface FormattedDistance {
+  ly: number | null;
+  au: number | null;
+  km: number | null;
+}
+
+export interface ApodTelemetry {
+  category: string;
+  confidence: number;
+  matchedKeywords: string[];
+  distanceLightYears: number | null;
+  distance: FormattedDistance;
+}
+
 export interface ApodData {
   title: string;
   url: string;
@@ -6,6 +20,11 @@ export interface ApodData {
   media_type: 'image' | 'video' | string;
   copyright?: string;
   hdurl?: string;
+  category?: string;
+  confidence?: number;
+  matchedKeywords?: string[];
+  distanceLightYears?: number | null;
+  distance?: FormattedDistance;
 }
 
 export type ViewMode = 'landing' | 'today' | 'discover' | 'favorites';

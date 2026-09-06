@@ -27,6 +27,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { X, Download, ZoomIn, ZoomOut, Sparkles, AlertTriangle } from 'lucide-react';
 import { ApodData } from '../types';
 import { formatDate } from '../utils/dateUtils';
+import { buildApodTelemetry, formatCategoryName, formatDistance } from '../lib/apodClassifier';
 
 interface ApodModalProps {
   item: ApodData | null;
@@ -256,11 +257,29 @@ export default function ApodModal({ item, isOpen, onClose }: ApodModalProps) {
             )}
           </section>
 
-          {/* Footer: Astronomical Coordinates, Copyright, and Explanation */}
+          {/* Footer: Astronomical Coordinates, Category, Distance, Copyright, and Explanation */}
           <footer className="px-5 py-4 bg-[#080A0E] border-t border-white/10 text-left space-y-2 max-h-48 overflow-y-auto">
             <div className="flex flex-wrap items-center justify-between text-xs font-mono text-slate-400 gap-2">
-              <span className="text-[#E4A853]">Observation Coordinates: {formatDate(item.date)}</span>
-              {item.copyright && <span>Credit & Copyright: {item.copyright}</span>}
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-[#E4A853]">Observation Coordinates: {formatDate(item.date)}</span>
+                {item.category && (
+                  <span className="px-2 py-0.5 rounded bg-white/5 border border-white/10 text-slate-200">
+                    Target: <span className="text-[#FFD700]">{formatCategoryName(item.category)}</span>
+                  </span>
+                )}
+                {item.distance && item.distance.ly !== null ? (
+                  <span className="px-2 py-0.5 rounded bg-cyan-950/40 border border-cyan-500/30 text-cyan-300 flex items-center gap-1.5">
+                    <span>Distance:</span>
+                    <span className="text-white font-medium">{item.distance.ly} ly</span>
+                    {item.distance.au !== null && <span className="text-slate-400">({item.distance.au.toLocaleString()} AU • {item.distance.km?.toLocaleString()} km)</span>}
+                  </span>
+                ) : item.distanceLightYears !== undefined && item.distanceLightYears !== null ? (
+                  <span className="px-2 py-0.5 rounded bg-cyan-950/40 border border-cyan-500/30 text-cyan-300">
+                    Distance: <span className="text-white">{formatDistance(item.distanceLightYears)}</span>
+                  </span>
+                ) : null}
+              </div>
+              {item.copyright && <span>Credit &amp; Copyright: {item.copyright}</span>}
             </div>
             <p id="apod-modal-description" className="text-xs sm:text-sm font-sans font-light leading-relaxed text-slate-300">
               {item.explanation}

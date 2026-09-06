@@ -6,6 +6,7 @@ import {
   parseMaxDateFromMessage, 
   NASA_EPOCH 
 } from '../utils/dateUtils';
+import { buildApodTelemetry } from './apodClassifier';
 
 const NASA_API_KEY = process.env.NASA_API_KEY || "DQyanRGtyfc3NAXvp1c69yTUBiEUt32RISDWcajH";
 const BASE_URL = "https://api.nasa.gov/planetary/apod";
@@ -174,14 +175,23 @@ export async function fetchApod(targetDate?: string): Promise<{ data: ApodData; 
       throw new Error(rawData.msg || `NASA API error: Code ${rawData.code}`);
     }
 
+    const title = rawData.title || 'Untitled Cosmic Observation';
+    const explanation = rawData.explanation || 'No astronomical telemetry explanation provided by NASA.';
+    const telemetry = buildApodTelemetry({ title, explanation });
+
     const apodItem: ApodData = {
-      title: rawData.title || 'Untitled Cosmic Observation',
+      title,
       url: rawData.url || '',
-      explanation: rawData.explanation || 'No astronomical telemetry explanation provided by NASA.',
+      explanation,
       date: rawData.date || requestedDate,
       media_type: rawData.media_type || 'image',
       copyright: rawData.copyright,
       hdurl: rawData.hdurl || rawData.url,
+      category: telemetry.category,
+      confidence: telemetry.confidence,
+      matchedKeywords: telemetry.matchedKeywords,
+      distanceLightYears: telemetry.distanceLightYears,
+      distance: telemetry.distance,
     };
 
     setCachedApod(apodItem.date, apodItem);
@@ -207,14 +217,23 @@ export async function fetchApod(targetDate?: string): Promise<{ data: ApodData; 
         const fallbackRes = await fetch(`${BASE_URL}?api_key=${NASA_API_KEY}&date=${fallbackDate}`);
         if (fallbackRes.ok) {
           const fallbackData = await fallbackRes.json();
+          const fTitle = fallbackData.title || 'Untitled Cosmic Observation';
+          const fExpl = fallbackData.explanation || '';
+          const fTelemetry = buildApodTelemetry({ title: fTitle, explanation: fExpl });
+
           const item: ApodData = {
-            title: fallbackData.title || 'Untitled Cosmic Observation',
+            title: fTitle,
             url: fallbackData.url || '',
-            explanation: fallbackData.explanation || '',
+            explanation: fExpl,
             date: fallbackData.date || fallbackDate,
             media_type: fallbackData.media_type || 'image',
             copyright: fallbackData.copyright,
             hdurl: fallbackData.hdurl || fallbackData.url,
+            category: fTelemetry.category,
+            confidence: fTelemetry.confidence,
+            matchedKeywords: fTelemetry.matchedKeywords,
+            distanceLightYears: fTelemetry.distanceLightYears,
+            distance: fTelemetry.distance,
           };
           setCachedApod(item.date, item);
           return { data: item, actualDate: item.date, isFallback: true };
@@ -228,18 +247,6 @@ export async function fetchApod(targetDate?: string): Promise<{ data: ApodData; 
 
 /**
  * Queries a chronological span of APOD observations between two RFC-3339 dates.
- * 
- * - What it does:
- *   Requests batch array payloads from NASA's APOD endpoint spanning `startDate` through `endDate`,
- *   normalizes missing fields with robust fallbacks, and formats them into strongly typed `ApodData` items.
- * 
- * - Why it exists:
- *   Powering multi-item archival views (e.g. recent weekly gallery, monthly retrospectives) in a single
- *   compact HTTP roundtrip rather than spawning N sequential network calls.
- * 
- * - How it fits into the workflow:
- *   Consumed by the Gallery component (`Gallery.tsx`) and date-span queries, populating grid layouts
- *   with loaded media cards.
  */
 export async function fetchApodRange(startDate: string, endDate: string): Promise<ApodData[]> {
   const url = `${BASE_URL}?api_key=${NASA_API_KEY}&start_date=${startDate}&end_date=${endDate}`;
@@ -247,31 +254,30 @@ export async function fetchApodRange(startDate: string, endDate: string): Promis
   const data = await res.json();
   const list: any[] = Array.isArray(data) ? data : [data];
   
-  return list.map((item) => ({
-    title: item.title || 'Astronomical Observation',
-    url: item.url || '',
-    explanation: item.explanation || '',
-    date: item.date || '',
-    media_type: item.media_type || 'image',
-    copyright: item.copyright,
-    hdurl: item.hdurl || item.url,
-  }));
+  return list.map((item) => {
+    const title = item.title || 'Astronomical Observation';
+    const explanation = item.explanation || '';
+    const telemetry = buildApodTelemetry({ title, explanation });
+
+    return {
+      title,
+      url: item.url || '',
+      explanation,
+      date: item.date || '',
+      media_type: item.media_type || 'image',
+      copyright: item.copyright,
+      hdurl: item.hdurl || item.url,
+      category: telemetry.category,
+      confidence: telemetry.confidence,
+      matchedKeywords: telemetry.matchedKeywords,
+      distanceLightYears: telemetry.distanceLightYears,
+      distance: telemetry.distance,
+    };
+  });
 }
 
 /**
  * Retrieves a non-deterministic sample of random historical APOD records.
- * 
- * - What it does:
- *   Calls NASA's APOD `count` parameter to return randomly selected observations across the entire
- *   30-year archival history, sanitizing and formatting each record.
- * 
- * - Why it exists:
- *   Facilitates open-ended cosmic discovery, enabling serendipitous exploration of obscure nebulae,
- *   galaxies, and space missions without requiring the user to guess dates.
- * 
- * - How it fits into the workflow:
- *   Powers the "Discover / Shuffle" view (`Discover.tsx`), providing fresh content on demand when
- *   exploring the universe beyond the current calendar month.
  */
 export async function fetchRandomApods(count = 24): Promise<ApodData[]> {
   const url = `${BASE_URL}?api_key=${NASA_API_KEY}&count=${count}`;
@@ -279,13 +285,24 @@ export async function fetchRandomApods(count = 24): Promise<ApodData[]> {
   const data = await res.json();
   const list: any[] = Array.isArray(data) ? data : [data];
 
-  return list.map((item) => ({
-    title: item.title || 'Astronomical Observation',
-    url: item.url || '',
-    explanation: item.explanation || '',
-    date: item.date || '',
-    media_type: item.media_type || 'image',
-    copyright: item.copyright,
-    hdurl: item.hdurl || item.url,
-  }));
+  return list.map((item) => {
+    const title = item.title || 'Astronomical Observation';
+    const explanation = item.explanation || '';
+    const telemetry = buildApodTelemetry({ title, explanation });
+
+    return {
+      title,
+      url: item.url || '',
+      explanation,
+      date: item.date || '',
+      media_type: item.media_type || 'image',
+      copyright: item.copyright,
+      hdurl: item.hdurl || item.url,
+      category: telemetry.category,
+      confidence: telemetry.confidence,
+      matchedKeywords: telemetry.matchedKeywords,
+      distanceLightYears: telemetry.distanceLightYears,
+      distance: telemetry.distance,
+    };
+  });
 }
