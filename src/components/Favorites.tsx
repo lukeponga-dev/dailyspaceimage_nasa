@@ -3,26 +3,22 @@
  * 
  * - What the component does:
  *   Displays the user's personal catalog of saved Astronomy Pictures of the Day.
- *   Persisted in browser localStorage (`favorites` array), allowing users to browse their saved discoveries,
- *   remove items, or jump back to the observation in the main telescope array.
+ *   Persisted in browser localStorage (`favorites` array), allowing users to browse saved discoveries,
+ *   inspect any item in full-screen HD detail overlay (`ImageExpansionOverlay`), remove items,
+ *   or jump back to the observation in the main telescope array.
  * 
- * - Why the design change improves UX:
- *   1. Provides an elegant empty state encouraging users to explore and bookmark celestial phenomena.
- *   2. Responsive grid with aspect-ratio preserved image cards (`aspect-video`) preventing layout shift.
- *   3. Native lazy loading and accessible buttons with descriptive screen-reader labels.
- * 
- * - How the styling works:
- *   Two-column card grid (`grid-cols-1 sm:grid-cols-2`), dark obsidian cards (`bg-[#0C0E12]`),
- *   gold accented borders and hover highlights (`hover:border-[#E4A853]/30`), and subtle elevation shadows.
+ * - Why it exists:
+ *   Gives users a permanent archival repository for favorite celestial phenomena with instant high-res inspection.
  * 
  * - How it fits into the NASA APOD workflow:
  *   Activated via `currentView === 'favorites'`. Reads from the reactive `favorites` state in `App.tsx`.
  */
 
-import React from 'react';
-import { Trash2, ExternalLink, Star } from 'lucide-react';
+import React, { useState } from 'react';
+import { Trash2, ExternalLink, Star, Maximize2 } from 'lucide-react';
 import { ApodData } from '../types';
 import { formatDate } from '../utils/dateUtils';
+import ImageExpansionOverlay from './ImageExpansionOverlay';
 
 interface FavoritesProps {
   favorites: ApodData[];
@@ -31,6 +27,8 @@ interface FavoritesProps {
 }
 
 export default function Favorites({ favorites, onRemoveFavorite, onSelectImage }: FavoritesProps) {
+  const [activeModalItem, setActiveModalItem] = useState<ApodData | null>(null);
+
   return (
     <section id="favorites-vault-root" aria-label="Saved Cosmic Wonders" className="space-y-10 animate-fade-in pb-16 text-left">
       {/* Header Info */}
@@ -69,7 +67,19 @@ export default function Favorites({ favorites, onRemoveFavorite, onSelectImage }
               className="group bg-[#0C0E12] border border-white/5 hover:border-[#E4A853]/30 rounded-xl overflow-hidden hover:shadow-[0_12px_30px_rgba(0,0,0,0.65),0_0_20px_rgba(228,168,83,0.03)] hover:-translate-y-0.5 transition-all duration-300 flex flex-col h-full"
             >
               {/* Media Preview Box */}
-              <div className="relative aspect-video overflow-hidden bg-[#050608]">
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={() => setActiveModalItem(item)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    setActiveModalItem(item);
+                  }
+                }}
+                aria-label={`Expand ${item.title} in full-screen detail viewer`}
+                className="relative aspect-video overflow-hidden bg-[#050608] cursor-zoom-in focus:outline-none focus:ring-2 focus:ring-[#E4A853]"
+              >
                 {item.media_type === 'image' ? (
                   <img 
                     src={item.url} 
@@ -88,6 +98,17 @@ export default function Favorites({ favorites, onRemoveFavorite, onSelectImage }
                 <time dateTime={item.date} className="absolute bottom-3 left-3 bg-[#050608]/90 backdrop-blur-sm border border-white/5 px-2 py-0.5 rounded text-[10px] font-mono text-slate-300">
                   {formatDate(item.date)}
                 </time>
+
+                {/* Hover Cue */}
+                <div
+                  aria-hidden="true"
+                  className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center pointer-events-none"
+                >
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#0C0E12]/95 border border-[#E4A853]/60 text-[#E4A853] text-[11px] font-mono shadow-xl">
+                    <Maximize2 size={13} />
+                    <span>Inspect Detail (HD)</span>
+                  </div>
+                </div>
               </div>
 
               {/* Informative Body */}
@@ -101,15 +122,26 @@ export default function Favorites({ favorites, onRemoveFavorite, onSelectImage }
 
                 {/* Footer Operations */}
                 <div className="flex items-center justify-between pt-3 border-t border-white/5 mt-auto">
-                  <button
-                    type="button"
-                    onClick={() => onSelectImage(item.date)}
-                    aria-label={`View ${item.title} in Astronomy Picture of the Day array`}
-                    className="inline-flex items-center gap-1.5 text-xs text-[#E4A853] hover:text-[#ffd99e] font-semibold transition cursor-pointer focus:outline-none focus:underline"
-                  >
-                    <ExternalLink size={12} aria-hidden="true" />
-                    <span>View APOD</span>
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => onSelectImage(item.date)}
+                      aria-label={`View ${item.title} in Astronomy Picture of the Day array`}
+                      className="inline-flex items-center gap-1.5 text-xs text-[#E4A853] hover:text-[#ffd99e] font-semibold transition cursor-pointer focus:outline-none focus:underline"
+                    >
+                      <ExternalLink size={12} aria-hidden="true" />
+                      <span>View APOD</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveModalItem(item)}
+                      className="inline-flex items-center gap-1 text-xs text-slate-400 hover:text-slate-200 transition cursor-pointer"
+                      title="Inspect Detail"
+                    >
+                      <Maximize2 size={12} />
+                      <span className="hidden sm:inline">Inspect</span>
+                    </button>
+                  </div>
                   <button
                     type="button"
                     onClick={() => onRemoveFavorite(item.date)}
@@ -125,7 +157,17 @@ export default function Favorites({ favorites, onRemoveFavorite, onSelectImage }
           ))}
         </div>
       )}
+
+      {/* Full-Screen Detail Expansion Overlay */}
+      <ImageExpansionOverlay
+        item={activeModalItem}
+        isOpen={Boolean(activeModalItem)}
+        onClose={() => setActiveModalItem(null)}
+        onSelectDate={(date) => {
+          onSelectImage(date);
+          setActiveModalItem(null);
+        }}
+      />
     </section>
   );
 }
-

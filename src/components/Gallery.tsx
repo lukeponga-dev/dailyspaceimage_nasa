@@ -398,6 +398,10 @@ export default function Gallery({
         item={activeModalItem}
         isOpen={Boolean(activeModalItem)}
         onClose={() => setActiveModalItem(null)}
+        onSelectDate={(date) => {
+          onSelectImage(date);
+          setActiveModalItem(null);
+        }}
       />
     </div>
   );

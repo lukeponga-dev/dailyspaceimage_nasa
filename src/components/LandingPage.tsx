@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'motion/react';
-import { Compass, Sparkles, Star, ChevronRight, ChevronDown, Activity, Globe, Eye, Rocket } from 'lucide-react';
+import { Compass, Sparkles, Star, ChevronRight, ChevronDown, Activity, Globe, Eye, Rocket, Maximize2 } from 'lucide-react';
 import { getEasternDate } from '../utils/dateUtils';
 import { ApodData } from '../types';
+import ImageExpansionOverlay from './ImageExpansionOverlay';
 
 interface LandingPageProps {
   onNavigate: (view: string) => void;
@@ -14,6 +15,7 @@ export default function LandingPage({ onNavigate, favoritesCount, onSelectDate }
   const [todayData, setTodayData] = useState<ApodData | null>(null);
   const [loading, setLoading] = useState(true);
   const [imageError, setImageError] = useState(false);
+  const [showOverlay, setShowOverlay] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const spotlightRef = useRef<HTMLDivElement | null>(null);
 
@@ -168,6 +170,7 @@ export default function LandingPage({ onNavigate, favoritesCount, onSelectDate }
 
             <div className="pt-2 flex flex-col sm:flex-row items-center gap-4">
               <button
+                type="button"
                 onClick={handleGoToToday}
                 className="w-full sm:w-auto flex items-center justify-center gap-2.5 px-8 py-4 bg-[#E4A853] hover:bg-[#f3be73] text-[#050608] shadow-[0_0_25px_rgba(228,168,83,0.35)] rounded-sm text-sm font-bold tracking-wider uppercase transition-all duration-300 cursor-pointer active:scale-95 group"
               >
@@ -176,6 +179,7 @@ export default function LandingPage({ onNavigate, favoritesCount, onSelectDate }
               </button>
 
               <button
+                type="button"
                 onClick={() => onNavigate('discover')}
                 className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-4 bg-transparent border border-[#E4A853]/50 text-[#E4A853] hover:bg-[#E4A853]/10 rounded-sm text-sm font-bold tracking-wider uppercase transition-all duration-300 cursor-pointer active:scale-95"
               >
@@ -235,12 +239,7 @@ export default function LandingPage({ onNavigate, favoritesCount, onSelectDate }
         </div>
       </div>
 
-      {/* 
-        Scroll Cue: Animated guide encouraging first-time visitors to explore the content below
-        - What it does: Smoothly scrolls the viewport to the Spotlight & Highlights section on click.
-        - Why it exists: Fulfills user onboarding heuristics by preventing the hero section from feeling like a dead-end page.
-        - How it fits into the workflow: Anchored between the greeting card and the dynamic daily APOD preview.
-      */}
+      {/* Scroll Cue */}
       <div className="flex justify-center -my-8 sm:-my-10 relative z-20">
         <button
           id="landing-scroll-cue-btn"
@@ -263,13 +262,26 @@ export default function LandingPage({ onNavigate, favoritesCount, onSelectDate }
             <span className="text-[10px] font-mono text-[#E4A853] uppercase tracking-widest font-bold">Today's Highlight Coordinates</span>
             <h3 className="text-2xl font-serif text-slate-100 font-medium">Stellar Spotlight</h3>
           </div>
-          <button 
-            onClick={handleGoToToday}
-            className="flex items-center gap-1 text-xs font-mono text-[#E4A853] hover:text-[#ffd99e] transition-colors cursor-pointer group"
-          >
-            Enter Observatory
-            <ChevronRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
-          </button>
+          <div className="flex items-center gap-3">
+            {todayData && todayData.media_type === 'image' && (
+              <button
+                type="button"
+                onClick={() => setShowOverlay(true)}
+                className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#E4A853]/10 border border-[#E4A853]/35 text-xs font-mono text-[#E4A853] hover:bg-[#E4A853]/20 transition-colors cursor-pointer"
+              >
+                <Maximize2 size={12} />
+                <span>Expand Detail HD</span>
+              </button>
+            )}
+            <button 
+              type="button"
+              onClick={handleGoToToday}
+              className="flex items-center gap-1 text-xs font-mono text-[#E4A853] hover:text-[#ffd99e] transition-colors cursor-pointer group"
+            >
+              Enter Observatory
+              <ChevronRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
+            </button>
+          </div>
         </div>
 
         {loading ? (
@@ -278,8 +290,14 @@ export default function LandingPage({ onNavigate, favoritesCount, onSelectDate }
           </div>
         ) : todayData ? (
           <div 
-            onClick={handleGoToToday}
-            className="group/spotlight relative w-full h-[320px] rounded-xl overflow-hidden border border-[#E4A853]/20 shadow-2xl cursor-pointer flex flex-col justify-end p-6 md:p-8"
+            onClick={() => {
+              if (todayData.media_type === 'image') {
+                setShowOverlay(true);
+              } else {
+                handleGoToToday();
+              }
+            }}
+            className="group/spotlight relative w-full h-[320px] rounded-xl overflow-hidden border border-[#E4A853]/20 shadow-2xl cursor-zoom-in flex flex-col justify-end p-6 md:p-8"
           >
             {/* Background image preview */}
             {todayData.media_type === 'image' && !imageError ? (
@@ -296,6 +314,13 @@ export default function LandingPage({ onNavigate, favoritesCount, onSelectDate }
             {/* Ambient gradients */}
             <div className="absolute inset-0 bg-gradient-to-t from-[#050608]/95 via-[#050608]/60 to-transparent -z-10" />
             
+            {/* Hover Expand Banner */}
+            <div className="absolute top-4 right-4 opacity-0 group-hover/spotlight:opacity-100 transition-opacity">
+              <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/80 border border-[#E4A853]/50 text-[11px] font-mono text-[#E4A853] shadow-lg backdrop-blur-md">
+                <Maximize2 size={12} /> Click to Expand Full-Screen
+              </span>
+            </div>
+
             <div className="max-w-2xl space-y-2">
               <span className="text-[9px] font-mono text-[#E4A853] uppercase tracking-widest font-bold">
                 Astronomical Target • {todayData.date}
@@ -360,6 +385,16 @@ export default function LandingPage({ onNavigate, favoritesCount, onSelectDate }
         </div>
       </div>
 
+      {/* Fullscreen Expansion Overlay */}
+      <ImageExpansionOverlay
+        item={todayData}
+        isOpen={showOverlay}
+        onClose={() => setShowOverlay(false)}
+        onSelectDate={(date) => {
+          handleGoToToday();
+          setShowOverlay(false);
+        }}
+      />
     </div>
   );
 }

@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { Search, Grid, Eye, Shuffle, Star, ExternalLink, Calendar, Heart, Video, Image, ArrowUpDown, X, Download, Sparkles, Compass, Layers } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { Search, Grid, Eye, Shuffle, Star, ExternalLink, Calendar, Heart, Video, Image, ArrowUpDown, X, Download, Sparkles, Compass, Layers, Maximize2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import ConstellationLoader from './ConstellationLoader';
+import ImageExpansionOverlay from './ImageExpansionOverlay';
 import { 
   getEasternDate, 
   addDays, 
@@ -9,16 +10,7 @@ import {
   parseMaxDateFromMessage, 
   isDateUnavailableError 
 } from '../utils/dateUtils';
-
-interface ApodData {
-  title: string;
-  url: string;
-  explanation: string;
-  date: string;
-  media_type: string;
-  copyright?: string;
-  hdurl?: string;
-}
+import { ApodData } from '../types';
 
 interface DiscoverProps {
   favorites: ApodData[];
@@ -26,7 +18,6 @@ interface DiscoverProps {
   isFavorite: (date: string) => boolean;
   onSelectImage: (date: string) => void;
 }
-
 
 export default function Discover({ favorites, onToggleFavorite, isFavorite, onSelectImage }: DiscoverProps) {
   const [gallery, setGallery] = useState<ApodData[]>([]);
@@ -38,6 +29,7 @@ export default function Discover({ favorites, onToggleFavorite, isFavorite, onSe
   const [gridColumns, setGridColumns] = useState<'grid2x2' | 'grid4x4'>('grid2x2');
   
   const [selectedItem, setSelectedItem] = useState<ApodData | null>(null);
+  const [expandedItem, setExpandedItem] = useState<ApodData | null>(null);
 
   const fetchGallery = useCallback(async () => {
     setLoading(true);
@@ -128,7 +120,7 @@ export default function Discover({ favorites, onToggleFavorite, isFavorite, onSe
     });
 
   return (
-    <div className="space-y-10 animate-fade-in pb-16 relative">
+    <div className="space-y-10 animate-fade-in pb-16 relative text-left">
       {/* Visual background atmospheric flare */}
       <div className="absolute top-0 right-1/4 w-96 h-96 bg-[#E4A853]/5 blur-[140px] rounded-full pointer-events-none -z-10" />
 
@@ -171,7 +163,7 @@ export default function Discover({ favorites, onToggleFavorite, isFavorite, onSe
               </div>
               <div className="flex items-center gap-1.5 px-3 py-1 bg-white/5 rounded-md border border-white/5">
                 <Layers size={12} className="text-[#E4A853]" />
-                <span>2x2 & 4-Col Grid Modes</span>
+                <span>2x2 &amp; 4-Col Grid Modes</span>
               </div>
             </div>
           </div>
@@ -181,6 +173,7 @@ export default function Discover({ favorites, onToggleFavorite, isFavorite, onSe
             {/* Grid Layout Switcher */}
             <div className="flex items-center gap-1 bg-[#050608] border border-white/10 p-1.5 rounded-full shadow-inner">
               <button
+                type="button"
                 onClick={() => setGridColumns('grid2x2')}
                 title="2x2 Grid View"
                 className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[10px] font-mono font-bold transition-all cursor-pointer ${
@@ -193,6 +186,7 @@ export default function Discover({ favorites, onToggleFavorite, isFavorite, onSe
                 <span>2x2 Grid</span>
               </button>
               <button
+                type="button"
                 onClick={() => setGridColumns('grid4x4')}
                 title="Compact Grid View (4 Columns)"
                 className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[10px] font-mono font-bold transition-all cursor-pointer ${
@@ -209,6 +203,7 @@ export default function Discover({ favorites, onToggleFavorite, isFavorite, onSe
             {/* Array Feed Mode Switcher */}
             <div className="flex items-center gap-1.5 bg-[#050608] border border-white/10 p-1.5 rounded-full shadow-lg">
               <button
+                type="button"
                 onClick={() => setFeedMode('recent')}
                 className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all duration-300 cursor-pointer active:scale-95 select-none ${
                   feedMode === 'recent' 
@@ -221,6 +216,7 @@ export default function Discover({ favorites, onToggleFavorite, isFavorite, onSe
               </button>
               
               <button
+                type="button"
                 onClick={() => setFeedMode('random')}
                 className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all duration-300 cursor-pointer active:scale-95 select-none ${
                   feedMode === 'random' 
@@ -254,6 +250,7 @@ export default function Discover({ favorites, onToggleFavorite, isFavorite, onSe
         {/* Media Type Filter Tab */}
         <div className="grid grid-cols-3 md:col-span-4 bg-[#050608] p-1 border border-white/5 rounded-xl">
           <button
+            type="button"
             onClick={() => setMediaTypeFilter('all')}
             className={`py-1.5 px-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer ${
               mediaTypeFilter === 'all' 
@@ -265,6 +262,7 @@ export default function Discover({ favorites, onToggleFavorite, isFavorite, onSe
           </button>
           
           <button
+            type="button"
             onClick={() => setMediaTypeFilter('image')}
             className={`py-1.5 px-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-1 cursor-pointer ${
               mediaTypeFilter === 'image' 
@@ -277,6 +275,7 @@ export default function Discover({ favorites, onToggleFavorite, isFavorite, onSe
           </button>
           
           <button
+            type="button"
             onClick={() => setMediaTypeFilter('video')}
             className={`py-1.5 px-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-1 cursor-pointer ${
               mediaTypeFilter === 'video' 
@@ -344,22 +343,37 @@ export default function Discover({ favorites, onToggleFavorite, isFavorite, onSe
                   )}
 
                   {/* Shading overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#050608]/75 via-transparent to-transparent opacity-80"></div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#050608]/75 via-transparent to-transparent opacity-80" />
                   
-                  {/* Favorite Toggle Icon */}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onToggleFavorite(item);
-                    }}
-                    className={`absolute top-3 right-3 p-1.5 bg-[#050608]/80 backdrop-blur-md rounded-full border transition-all duration-300 cursor-pointer ${
-                      favorited 
-                        ? 'border-[#E4A853]/45 text-[#E4A853] bg-[#E4A853]/10' 
-                        : 'border-white/5 text-slate-500 hover:text-[#E4A853] hover:border-[#E4A853]/30'
-                    }`}
-                  >
-                    <Star size={11} className={favorited ? "text-[#E4A853] fill-[#E4A853]" : ""} />
-                  </button>
+                  {/* Top-right quick actions: Inspect HD & Favorite */}
+                  <div className="absolute top-3 right-3 flex items-center gap-1.5 z-10">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setExpandedItem(item);
+                      }}
+                      className="p-1.5 bg-[#050608]/80 backdrop-blur-md rounded-full border border-white/10 text-slate-300 hover:text-[#E4A853] hover:border-[#E4A853]/40 transition-colors cursor-pointer"
+                      title="Inspect Fullscreen Detail"
+                    >
+                      <Maximize2 size={11} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onToggleFavorite(item);
+                      }}
+                      className={`p-1.5 bg-[#050608]/80 backdrop-blur-md rounded-full border transition-all duration-300 cursor-pointer ${
+                        favorited 
+                          ? 'border-[#E4A853]/45 text-[#E4A853] bg-[#E4A853]/10' 
+                          : 'border-white/5 text-slate-500 hover:text-[#E4A853] hover:border-[#E4A853]/30'
+                      }`}
+                      title={favorited ? "Remove from favorites" : "Save to favorites"}
+                    >
+                      <Star size={11} className={favorited ? "text-[#E4A853] fill-[#E4A853]" : ""} />
+                    </button>
+                  </div>
 
                   <span className="absolute bottom-3 left-3 bg-[#050608]/90 backdrop-blur-sm border border-white/5 px-2 py-0.5 rounded text-[9px] font-mono text-slate-400">
                     {formatDate(item.date)}
@@ -380,7 +394,10 @@ export default function Discover({ favorites, onToggleFavorite, isFavorite, onSe
                     <span className="text-[8px] text-slate-500 font-mono uppercase tracking-wider">
                       {item.media_type} Domain
                     </span>
-                    <button className="text-[9px] text-[#E4A853] group-hover:text-[#ffd99e] font-semibold inline-flex items-center gap-1 cursor-pointer select-none">
+                    <button
+                      type="button"
+                      className="text-[9px] text-[#E4A853] group-hover:text-[#ffd99e] font-semibold inline-flex items-center gap-1 cursor-pointer select-none"
+                    >
                       <Eye size={10} />
                       Examine Details
                     </button>
@@ -422,6 +439,7 @@ export default function Discover({ favorites, onToggleFavorite, isFavorite, onSe
                   </p>
                 </div>
                 <button 
+                  type="button"
                   onClick={closeModal} 
                   className="p-2 bg-[#050608] hover:bg-[#0C0E12] text-slate-400 hover:text-[#E4A853] rounded-full border border-white/5 hover:border-[#E4A853]/25 transition-all duration-300 cursor-pointer active:scale-95"
                 >
@@ -429,7 +447,7 @@ export default function Discover({ favorites, onToggleFavorite, isFavorite, onSe
                 </button>
               </div>
 
-              {/* Media Showcase Frame with JWST flare background */}
+              {/* Media Showcase Frame with click to expand */}
               <div className="relative">
                 <div className="absolute -inset-10 pointer-events-none overflow-hidden z-0 select-none">
                   <div 
@@ -441,22 +459,46 @@ export default function Discover({ favorites, onToggleFavorite, isFavorite, onSe
                   />
                 </div>
 
-                <div className="relative z-10 rounded-xl overflow-hidden bg-[#050608] border border-white/5 aspect-video max-h-96 flex items-center justify-center shadow-inner">
+                <div
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => {
+                    setExpandedItem(selectedItem);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setExpandedItem(selectedItem);
+                    }
+                  }}
+                  title="Click image for full-screen detail inspection"
+                  className="relative z-10 rounded-xl overflow-hidden bg-[#050608] border border-white/5 aspect-video max-h-96 flex items-center justify-center shadow-inner cursor-zoom-in group"
+                >
                   {selectedItem.media_type === 'image' ? (
                     <img 
                       src={selectedItem.url} 
                       alt={selectedItem.title} 
-                      className="w-full h-full object-contain"
+                      className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
                       referrerPolicy="no-referrer"
                     />
                   ) : (
                     <iframe 
                       src={selectedItem.url.includes('youtube.com/watch?v=') ? selectedItem.url.replace('watch?v=', 'embed/') : selectedItem.url} 
                       title={selectedItem.title} 
-                      className="w-full h-full" 
+                      className="w-full h-full border-0" 
                       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                       allowFullScreen
                     />
+                  )}
+
+                  {/* Hover banner for expand detail */}
+                  {selectedItem.media_type === 'image' && (
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                      <div className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#0C0E12]/95 border border-[#E4A853]/60 text-[#E4A853] text-xs font-mono shadow-2xl">
+                        <Maximize2 size={13} />
+                        <span>Click for Full-Screen Detail Viewer</span>
+                      </div>
+                    </div>
                   )}
                 </div>
               </div>
@@ -474,6 +516,7 @@ export default function Discover({ favorites, onToggleFavorite, isFavorite, onSe
               {/* Modal Control Action deck */}
               <div className="flex flex-wrap items-center gap-3 pt-5 border-t border-white/5">
                 <button
+                  type="button"
                   onClick={() => {
                     onSelectImage(selectedItem.date);
                     closeModal();
@@ -485,6 +528,7 @@ export default function Discover({ favorites, onToggleFavorite, isFavorite, onSe
                 </button>
                 
                 <button
+                  type="button"
                   onClick={() => onToggleFavorite(selectedItem)}
                   className={`inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest px-5 py-3 rounded-xl border transition-all duration-300 cursor-pointer active:scale-95 ${
                     isFavorite(selectedItem.date) 
@@ -497,21 +541,32 @@ export default function Discover({ favorites, onToggleFavorite, isFavorite, onSe
                 </button>
 
                 {selectedItem.media_type === 'image' && (
-                  <a
-                    href={selectedItem.hdurl || selectedItem.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 bg-[#050608] border border-white/5 text-slate-300 hover:border-[#E4A853]/30 hover:text-[#E4A853] text-[10px] font-bold uppercase tracking-widest px-5 py-3 rounded-xl transition-all duration-300 sm:ml-auto cursor-pointer active:scale-95 shadow-md"
+                  <button
+                    type="button"
+                    onClick={() => setExpandedItem(selectedItem)}
+                    className="inline-flex items-center gap-2 bg-[#050608] border border-[#E4A853]/40 text-[#E4A853] hover:bg-[#E4A853]/10 text-[10px] font-bold uppercase tracking-widest px-5 py-3 rounded-xl transition-all duration-300 sm:ml-auto cursor-pointer active:scale-95 shadow-md"
                   >
-                    <Download size={12} />
-                    HD Resolution
-                  </a>
+                    <Maximize2 size={12} />
+                    Inspect Detail (HD)
+                  </button>
                 )}
               </div>
             </motion.div>
           </div>
         )}
       </AnimatePresence>
+
+      {/* Full-Screen Deep Inspection Overlay */}
+      <ImageExpansionOverlay
+        item={expandedItem}
+        isOpen={Boolean(expandedItem)}
+        onClose={() => setExpandedItem(null)}
+        onSelectDate={(date) => {
+          onSelectImage(date);
+          setExpandedItem(null);
+          setSelectedItem(null);
+        }}
+      />
     </div>
   );
 }

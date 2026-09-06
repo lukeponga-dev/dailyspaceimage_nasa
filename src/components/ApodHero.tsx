@@ -259,38 +259,42 @@ export default function ApodHero({
               </div>
             )}
 
-            {/* Tap-to-Zoom & Fullscreen Quick Action Pills */}
+            {/* Expand Fullscreen & Quick Action Pills */}
             <div className="absolute bottom-3 right-3 flex items-center gap-2 z-10 pointer-events-auto">
+              <button
+                id="hero-expand-detail-btn"
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onOpenModal();
+                }}
+                className="min-h-[38px] flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#050608]/90 hover:bg-[#050608] border border-[#E4A853]/60 text-[#E4A853] text-[11px] font-mono backdrop-blur-md shadow-xl transition-all active:scale-95 cursor-pointer hover:border-[#E4A853] hover:text-[#ffd99e]"
+                title="Expand image in full-screen detail inspection overlay"
+              >
+                <MaximizeIcon size={13} />
+                <span>Expand Detail View</span>
+              </button>
+
               <button
                 id="hero-tap-to-zoom-btn"
                 type="button"
                 onClick={handleToggleZoom}
-                className="min-h-[38px] flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#050608]/90 hover:bg-[#050608] border border-[#E4A853]/50 text-[#E4A853] text-[11px] font-mono backdrop-blur-md shadow-lg transition-all active:scale-95 cursor-pointer"
-                title={isZoomed ? "Reset Zoom" : "Tap to Zoom in"}
+                className="min-h-[38px] flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#050608]/90 hover:bg-[#050608] border border-white/20 text-slate-300 text-[11px] font-mono backdrop-blur-md shadow-lg transition-all active:scale-95 cursor-pointer"
+                title={isZoomed ? "Reset In-Place Zoom" : "Quick Zoom In-Place"}
               >
                 {isZoomed ? <ZoomOutIcon size={13} /> : <ZoomInIcon size={13} />}
-                <span>{isZoomed ? 'Reset Zoom' : 'Tap to Zoom'}</span>
-              </button>
-
-              <button
-                id="hero-fullscreen-pill-btn"
-                type="button"
-                onClick={handleToggleFullscreen}
-                className="min-h-[38px] min-w-[38px] flex items-center justify-center rounded-full bg-[#050608]/90 hover:bg-[#050608] border border-[#E4A853]/50 text-[#E4A853] text-[11px] font-mono backdrop-blur-md shadow-lg transition-all active:scale-95 cursor-pointer"
-                title={isFullscreen ? "Exit Fullscreen" : "Full-Screen Mode"}
-              >
-                {isFullscreen ? <MinimizeIcon size={14} /> : <MaximizeIcon size={14} />}
+                <span>{isZoomed ? 'Reset' : 'Quick Zoom'}</span>
               </button>
             </div>
 
             {/* Hover Fullscreen HUD Overlay Indicator */}
             <div
               aria-hidden="true"
-              className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center pointer-events-none"
+              className="absolute inset-0 bg-black/35 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center pointer-events-none"
             >
-              <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-[#0C0E12]/90 border border-[#E4A853]/50 text-[#E4A853] text-xs font-mono backdrop-blur-md shadow-xl">
-                <MaximizeIcon size={14} />
-                <span>Open Full HD Modal</span>
+              <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-[#0C0E12]/95 border border-[#E4A853]/60 text-[#E4A853] text-xs font-mono backdrop-blur-md shadow-2xl transform translate-y-2 group-hover:translate-y-0 transition-transform">
+                <MaximizeIcon size={15} />
+                <span>Click image to expand in full-screen detail viewer</span>
               </div>
             </div>
           </div>
