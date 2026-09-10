@@ -22,6 +22,7 @@
  */
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
+import ApodVideoPlayer from './ApodVideoPlayer';
 import { 
   Maximize2 as MaximizeIcon, 
   Minimize2 as MinimizeIcon, 
@@ -49,6 +50,7 @@ import { buildApodTelemetry } from '../lib/apodClassifier';
 import CategoryBadge from './CategoryBadge';
 import DistanceDisplay from './DistanceDisplay';
 import TelemetryPanel from './TelemetryPanel';
+import ImagePreloader from './ImagePreloader';
 
 interface ApodHeroProps {
   data: ApodData;
@@ -118,8 +120,8 @@ export default function ApodHero({
   /**
    * Toggles in-place tap-to-zoom magnification.
    */
-  const handleToggleZoom = (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleToggleZoom = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
     setIsZoomed(prev => !prev);
   };
 
@@ -163,29 +165,29 @@ export default function ApodHero({
       initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-      className="relative w-full max-w-4xl mx-auto rounded-2xl border border-[#E4A853]/25 bg-[#0C0E12]/95 backdrop-blur-xl p-4 sm:p-7 md:p-9 shadow-[0_20px_60px_rgba(0,0,0,0.7)] overflow-hidden text-left space-y-6"
+      className="relative w-full max-w-4xl mx-auto rounded-2xl border border-white/5 bg-void/60 backdrop-blur-2xl p-4 sm:p-7 md:p-9 shadow-[0_30px_60px_rgba(0,0,0,0.8)] overflow-hidden text-left space-y-8"
     >
       {/* Optical Reticle Corner Accents */}
-      <div aria-hidden="true" className="absolute top-3 left-3 w-4 h-4 border-l-2 border-t-2 border-[#E4A853]/40 pointer-events-none" />
-      <div aria-hidden="true" className="absolute top-3 right-3 w-4 h-4 border-r-2 border-t-2 border-[#E4A853]/40 pointer-events-none" />
-      <div aria-hidden="true" className="absolute bottom-3 left-3 w-4 h-4 border-l-2 border-b-2 border-[#E4A853]/40 pointer-events-none" />
-      <div aria-hidden="true" className="absolute bottom-3 right-3 w-4 h-4 border-r-2 border-b-2 border-[#E4A853]/40 pointer-events-none" />
+      <div aria-hidden="true" className="absolute top-4 left-4 w-6 h-6 border-l border-t border-gold/30 pointer-events-none" />
+      <div aria-hidden="true" className="absolute top-4 right-4 w-6 h-6 border-r border-t border-gold/30 pointer-events-none" />
+      <div aria-hidden="true" className="absolute bottom-4 left-4 w-6 h-6 border-l border-b border-gold/30 pointer-events-none" />
+      <div aria-hidden="true" className="absolute bottom-4 right-4 w-6 h-6 border-r border-b border-gold/30 pointer-events-none" />
 
       {/* Observation Date & Feed Tag */}
-      <div className="flex items-center justify-between gap-2 border-b border-white/5 pb-3">
-        <div className="flex items-center gap-2">
+      <div className="flex items-center justify-between gap-2 border-b border-white/5 pb-4">
+        <div className="flex items-center gap-3">
           <time
             dateTime={data.date}
-            className="px-2.5 py-1 rounded-full bg-[#E4A853]/15 border border-[#E4A853]/30 text-[#E4A853] text-[10px] font-mono uppercase font-bold tracking-wider"
+            className="px-3 py-1 rounded-full bg-gold/10 border border-gold/30 text-gold text-[10px] font-mono uppercase font-bold tracking-[0.2em]"
           >
             {formatDate(data.date)}
           </time>
-          <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider">
-            {isVideo ? 'Video Stream' : 'Deep Space Imagery'}
+          <span className="text-[10px] font-mono text-orbit-silver uppercase tracking-widest font-bold opacity-60">
+            {isVideo ? 'Stream' : 'IMAGERY'}
           </span>
         </div>
 
-        <span className="text-[10px] font-mono text-[#E4A853]/70 uppercase tracking-widest hidden sm:inline">
+        <span className="text-[10px] font-mono text-gold/60 uppercase tracking-[0.2em] font-bold hidden sm:inline">
           NASA APOD ARCHIVE
         </span>
       </div>
@@ -204,100 +206,28 @@ export default function ApodHero({
       >
         {isVideo ? (
           <div className="aspect-video w-full">
-            <iframe
-              src={data.url}
+            <ApodVideoPlayer
+              url={data.url}
               title={`NASA APOD Video Stream: ${data.title}`}
-              className="w-full h-full border-0"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
+              className="w-full h-full border-0 rounded-xl"
             />
           </div>
         ) : (
-          <div
-            id="hero-media-stage"
-            role="button"
-            tabIndex={0}
-            onClick={onOpenModal}
-            onKeyDown={handleStageKeyDown}
-            aria-label={`Inspect high-definition observation in modal: ${data.title}`}
-            className="relative cursor-pointer overflow-hidden flex items-center justify-center min-h-[300px] sm:min-h-[440px] focus:outline-none focus:ring-2 focus:ring-[#E4A853] rounded-xl"
-          >
-            {!imageError ? (
-              <>
-                {!imageLoaded && (
-                  <div
-                    aria-hidden="true"
-                    className="absolute inset-0 flex items-center justify-center bg-[#0C0E12] animate-pulse"
-                  >
-                    <div className="w-12 h-12 rounded-full border-2 border-[#E4A853]/20 border-t-[#E4A853] animate-spin" />
-                  </div>
-                )}
-                <img
-                  src={data.url}
-                  alt={`NASA Astronomy Observation: ${data.title}`}
-                  loading="eager"
-                  decoding="async"
-                  onLoad={() => setImageLoaded(true)}
-                  onError={() => setImageError(true)}
-                  className={`w-full h-auto max-h-[560px] object-contain transition-all duration-500 ease-out select-none ${
-                    imageLoaded ? 'opacity-100' : 'opacity-0'
-                  } ${isZoomed ? 'scale-150 cursor-zoom-out' : 'scale-100 cursor-zoom-in'}`}
-                />
-              </>
-            ) : (
-              <div className="p-10 text-center text-slate-400 space-y-3">
-                <AlertTriangleIcon className="mx-auto text-amber-400" size={32} aria-hidden="true" />
-                <p className="text-sm font-mono text-slate-300">Image stream unavailable</p>
-                <a
-                  href={data.hdurl || data.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs text-[#E4A853] hover:underline inline-flex items-center gap-1.5 font-mono"
-                >
-                  Direct NASA Source Link <ExternalLinkIcon size={12} aria-hidden="true" />
-                </a>
-              </div>
-            )}
-
-            {/* Expand Fullscreen & Quick Action Pills */}
-            <div className="absolute bottom-3 right-3 flex items-center gap-2 z-10 pointer-events-auto">
-              <button
-                id="hero-expand-detail-btn"
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onOpenModal();
-                }}
-                className="min-h-[38px] flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#050608]/90 hover:bg-[#050608] border border-[#E4A853]/60 text-[#E4A853] text-[11px] font-mono backdrop-blur-md shadow-xl transition-all active:scale-95 cursor-pointer hover:border-[#E4A853] hover:text-[#ffd99e]"
-                title="Expand image in full-screen detail inspection overlay"
-              >
-                <MaximizeIcon size={13} />
-                <span>Expand Detail View</span>
-              </button>
-
-              <button
-                id="hero-tap-to-zoom-btn"
-                type="button"
-                onClick={handleToggleZoom}
-                className="min-h-[38px] flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#050608]/90 hover:bg-[#050608] border border-white/20 text-slate-300 text-[11px] font-mono backdrop-blur-md shadow-lg transition-all active:scale-95 cursor-pointer"
-                title={isZoomed ? "Reset In-Place Zoom" : "Quick Zoom In-Place"}
-              >
-                {isZoomed ? <ZoomOutIcon size={13} /> : <ZoomInIcon size={13} />}
-                <span>{isZoomed ? 'Reset' : 'Quick Zoom'}</span>
-              </button>
-            </div>
-
-            {/* Hover Fullscreen HUD Overlay Indicator */}
-            <div
-              aria-hidden="true"
-              className="absolute inset-0 bg-black/35 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center pointer-events-none"
-            >
-              <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-[#0C0E12]/95 border border-[#E4A853]/60 text-[#E4A853] text-xs font-mono backdrop-blur-md shadow-2xl transform translate-y-2 group-hover:translate-y-0 transition-transform">
-                <MaximizeIcon size={15} />
-                <span>Click image to expand in full-screen detail viewer</span>
-              </div>
-            </div>
-          </div>
+          <ImagePreloader
+            src={data.url}
+            hdUrl={data.hdurl}
+            date={data.date}
+            title={data.title}
+            alt={`NASA Astronomy Observation: ${data.title}`}
+            enableZoom={true}
+            isZoomed={isZoomed}
+            onToggleZoom={handleToggleZoom}
+            onOpenModal={onOpenModal}
+            showQualityToggle={Boolean(data.hdurl)}
+            loadingLabel={`Synchronizing stream for ${formatDate(data.date)}...`}
+            priority={true}
+            minHeight="min-h-[300px] sm:min-h-[440px] md:min-h-[520px]"
+          />
         )}
       </section>
 
@@ -306,16 +236,16 @@ export default function ApodHero({
           - Prominent animated scroll indicator with bouncing chevron
           - Smoothly scrolls viewport to the scientific cards and telemetry
           ========================================================================= */}
-      <div className="flex justify-center -my-1">
+      <div className="flex justify-center -my-2">
         <button
           id="hero-scroll-cue-btn"
           type="button"
           onClick={() => summaryRef.current?.scrollIntoView({ behavior: 'smooth' })}
-          className="group inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#050608]/90 hover:bg-[#0C0E12] border border-[#E4A853]/35 hover:border-[#E4A853] text-[#E4A853] text-xs font-mono tracking-wider transition-all duration-300 cursor-pointer shadow-[0_4px_20px_rgba(0,0,0,0.8),0_0_15px_rgba(228,168,83,0.15)] active:scale-95"
-          aria-label="Scroll down to read scientific summary cards"
+          className="group inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-void/90 border border-gold/20 hover:border-gold text-gold text-[10px] font-mono font-bold tracking-[0.2em] uppercase transition-all duration-500 cursor-pointer shadow-[0_10px_30px_rgba(0,0,0,0.8),0_0_20px_rgba(227,164,92,0.1)] active:scale-95"
+          aria-label="Scroll down"
         >
-          <span className="font-semibold">Scroll to Discover</span>
-          <ChevronDownIcon size={14} className="animate-bounce text-[#FFD700]" />
+          <span>SCAN DETAILS</span>
+          <ChevronDownIcon size={14} className="animate-bounce" />
         </button>
       </div>
 
@@ -341,26 +271,26 @@ export default function ApodHero({
           />
         </div>
 
-        <h1 className="text-xl sm:text-2xl md:text-3xl font-serif font-bold text-white tracking-tight leading-snug">
+        <h1 className="text-2xl sm:text-3xl md:text-5xl font-sans font-bold text-stellar-white tracking-tight leading-[1.2] uppercase">
           {data.title}
         </h1>
 
         {/* Inline Quick Action Buttons for Thumb Reach */}
-        <div className="flex flex-wrap items-center gap-2.5 pt-1">
+        <div className="flex flex-wrap items-center gap-3 pt-4">
           {/* Save / Saved Button */}
           <button
             id="hero-toggle-favorite-btn"
             type="button"
             onClick={() => onToggleFavorite(data)}
             aria-label={isFavorite ? `Remove ${data.title} from favorites` : `Add ${data.title} to favorites`}
-            className={`min-h-[46px] flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-mono transition-all cursor-pointer border active:scale-95 focus:outline-none focus:ring-2 focus:ring-[#E4A853] ${
+            className={`min-h-[48px] flex items-center gap-2.5 px-6 py-2.5 rounded-2xl text-[11px] font-mono transition-all cursor-pointer border active:scale-95 focus:outline-none ${
               isFavorite
-                ? 'bg-[#E4A853] text-[#050608] border-[#E4A853] font-bold shadow-[0_0_20px_rgba(228,168,83,0.4)]'
-                : 'bg-white/5 hover:bg-white/10 text-slate-100 border-white/20 hover:border-[#E4A853]/60'
+                ? 'bg-gold text-void border-gold font-bold shadow-[0_0_25px_rgba(227,164,92,0.4)]'
+                : 'bg-white/5 hover:bg-gold/10 text-stellar-white border-white/10 hover:border-gold/50'
             }`}
           >
-            <StarIcon size={16} className={isFavorite ? 'fill-[#050608]' : 'text-[#E4A853]'} aria-hidden="true" />
-            <span className="font-semibold tracking-wide">
+            <StarIcon size={16} className={isFavorite ? 'fill-void' : 'text-gold'} aria-hidden="true" />
+            <span className="font-bold tracking-[0.1em] uppercase">
               {isFavorite ? 'Saved' : 'Save'}
             </span>
           </button>
@@ -372,10 +302,10 @@ export default function ApodHero({
               type="button"
               onClick={onRandom}
               aria-label="Randomize celestial observation"
-              className="min-h-[46px] flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-mono font-medium transition-all cursor-pointer border bg-white/5 hover:bg-[#E4A853]/15 text-slate-200 hover:text-[#E4A853] border-white/20 hover:border-[#E4A853]/60 active:scale-95 focus:outline-none focus:ring-2 focus:ring-[#E4A853]"
+              className="min-h-[48px] flex items-center gap-2.5 px-6 py-2.5 rounded-2xl text-[11px] font-mono font-bold transition-all cursor-pointer border bg-white/5 hover:bg-gold/10 text-stellar-white border-white/10 hover:border-gold/50 active:scale-95 focus:outline-none uppercase tracking-[0.1em]"
             >
-              <ShuffleIcon size={15} className="text-[#E4A853]" aria-hidden="true" />
-              <span>Random Image</span>
+              <ShuffleIcon size={15} className="text-gold" aria-hidden="true" />
+              <span>Randomize</span>
             </button>
           )}
 
@@ -385,8 +315,8 @@ export default function ApodHero({
             type="button"
             onClick={() => onShare(data)}
             aria-label="Share this astronomical observation"
-            className="min-h-[46px] min-w-[46px] flex items-center justify-center p-2.5 text-slate-300 hover:text-white bg-white/5 hover:bg-white/10 border border-white/20 hover:border-[#E4A853]/60 rounded-xl transition-all cursor-pointer active:scale-95 focus:outline-none focus:ring-2 focus:ring-[#E4A853]"
-            title="Share observation"
+            className="min-h-[48px] min-w-[48px] flex items-center justify-center p-2.5 text-stellar-white hover:text-gold bg-white/5 hover:bg-gold/10 border border-white/10 hover:border-gold/50 rounded-2xl transition-all cursor-pointer active:scale-95 focus:outline-none"
+            title="Share"
           >
             <ShareIcon size={16} aria-hidden="true" />
           </button>
@@ -398,8 +328,8 @@ export default function ApodHero({
               type="button"
               onClick={handleDownload}
               aria-label="Download high-resolution image"
-              className="min-h-[46px] min-w-[46px] flex items-center justify-center p-2.5 text-slate-300 hover:text-white bg-white/5 hover:bg-white/10 border border-white/20 hover:border-[#E4A853]/60 rounded-xl transition-all cursor-pointer active:scale-95 focus:outline-none focus:ring-2 focus:ring-[#E4A853]"
-              title="Download HD Image"
+              className="min-h-[48px] min-w-[48px] flex items-center justify-center p-2.5 text-stellar-white hover:text-gold bg-white/5 hover:bg-gold/10 border border-white/10 hover:border-gold/50 rounded-2xl transition-all cursor-pointer active:scale-95 focus:outline-none"
+              title="Download HD"
             >
               <DownloadIcon size={16} aria-hidden="true" />
             </button>
@@ -413,53 +343,62 @@ export default function ApodHero({
           - Card 2: Scientific Notes (concise bullet points)
           - Card 3: Mission Context
           ========================================================================= */}
-      <section ref={summaryRef} id="hero-scientific-summary-cards" className="space-y-3 pt-2">
+      <section ref={summaryRef} id="hero-scientific-summary-cards" className="space-y-4 pt-4">
         
         {/* Card 1: Key Insight */}
-        <div className="p-4 sm:p-5 rounded-xl bg-white/[0.02] border border-white/10 hover:border-[#E4A853]/40 transition-colors shadow-sm text-left space-y-2">
-          <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-[#E4A853] font-bold">
-            <BookOpenIcon size={15} className="text-[#E4A853]" aria-hidden="true" />
-            <span>Key Insight</span>
+        <div className="p-6 rounded-2xl bg-void/30 border border-white/5 hover:border-gold/20 transition-all duration-500 shadow-sm text-left space-y-3">
+          <div className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-[0.2em] text-gold font-bold">
+            <BookOpenIcon size={15} className="text-gold" aria-hidden="true" />
+            <span>Core Intel</span>
           </div>
-          <p className="text-slate-200 text-sm font-sans font-light leading-relaxed">
+          <p className="text-orbit-silver text-base font-sans font-medium leading-relaxed opacity-90">
             {summary.keyInsight}
           </p>
         </div>
 
         {/* Card 2: Scientific Notes */}
-        <div className="p-4 sm:p-5 rounded-xl bg-white/[0.02] border border-white/10 hover:border-[#E4A853]/40 transition-colors shadow-sm text-left space-y-2.5">
-          <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-[#E4A853] font-bold">
-            <ListFilterIcon size={15} className="text-[#E4A853]" aria-hidden="true" />
-            <span>Scientific Notes</span>
+        <div className="p-6 rounded-2xl bg-void/30 border border-white/5 hover:border-gold/20 transition-all duration-500 shadow-sm text-left space-y-4">
+          <div className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-[0.2em] text-gold font-bold">
+            <ListFilterIcon size={15} className="text-gold" aria-hidden="true" />
+            <span>Spectral Findings</span>
           </div>
-          <ul className="space-y-2 text-xs sm:text-sm font-sans text-slate-300 font-light leading-relaxed">
+          <ul className="space-y-3 text-[13px] font-sans text-orbit-silver font-medium leading-relaxed">
             {summary.notes.map((note, idx) => (
-              <li key={idx} className="flex items-start gap-2.5">
-                <span className="text-[#E4A853] font-bold select-none text-base leading-none mt-0.5">•</span>
-                <span>{note}</span>
+              <li key={idx} className="flex items-start gap-3">
+                <span className="text-gold font-bold select-none text-lg leading-none mt-[-2px]">•</span>
+                <span className="opacity-80">{note}</span>
               </li>
             ))}
           </ul>
         </div>
 
         {/* Card 3: Mission Context */}
-        <div className="p-4 sm:p-5 rounded-xl bg-white/[0.02] border border-white/10 hover:border-[#E4A853]/40 transition-colors shadow-sm text-left space-y-2">
-          <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-[#E4A853] font-bold">
-            <CompassIcon size={15} className="text-[#E4A853]" aria-hidden="true" />
-            <span>Mission Context</span>
+        <div className="p-6 rounded-2xl bg-void/40 border border-white/5 hover:border-gold/30 transition-all duration-500 shadow-2xl text-left space-y-4 group/card">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3 text-[10px] font-mono uppercase tracking-[0.2em] text-gold font-bold">
+              <div className="p-1.5 rounded-lg bg-gold/10 border border-gold/20">
+                <CompassIcon size={15} className="text-gold" aria-hidden="true" />
+              </div>
+              <span>Uplink Context</span>
+            </div>
+            <span className="text-[9px] font-mono px-2 py-0.5 rounded bg-gold/10 text-gold border border-gold/20 uppercase tracking-[0.2em] font-bold">
+              SECURE
+            </span>
           </div>
-          <div className="space-y-1.5 text-xs font-mono text-slate-300">
-            <p>
-              <span className="text-slate-400">Array/Mission:</span>{' '}
-              <span className="text-white font-semibold">{summary.missionContext.instrumentOrMission}</span>
+          <div className="space-y-3 text-[11px] font-mono text-orbit-silver bg-white/[0.02] p-4 rounded-xl border border-white/5">
+            <p className="flex justify-between items-center">
+              <span className="opacity-60 uppercase tracking-widest">Antenna/Mission</span>{' '}
+              <span className="text-stellar-white font-bold uppercase">{summary.missionContext.instrumentOrMission}</span>
             </p>
-            <p>
-              <span className="text-slate-400">Credit &amp; Copyright:</span>{' '}
-              <span className="text-slate-200">{summary.missionContext.credit}</span>
+            <div className="h-px w-full bg-white/5" />
+            <p className="flex justify-between items-center">
+              <span className="opacity-60 uppercase tracking-widest">Origin Source</span>{' '}
+              <span className="text-stellar-white truncate max-w-[200px] uppercase font-bold" title={summary.missionContext.credit}>{summary.missionContext.credit}</span>
             </p>
-            <p>
-              <span className="text-slate-400">Telemetry Stream:</span>{' '}
-              <span className="text-[#E4A853] font-medium">{summary.missionContext.observationType}</span>
+            <div className="h-px w-full bg-white/5" />
+            <p className="flex justify-between items-center">
+              <span className="opacity-60 uppercase tracking-widest">Protocol Type</span>{' '}
+              <span className="text-gold font-bold uppercase">{summary.missionContext.observationType}</span>
             </p>
           </div>
         </div>

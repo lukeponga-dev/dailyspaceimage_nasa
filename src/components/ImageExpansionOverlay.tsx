@@ -43,6 +43,7 @@ import {
 } from 'lucide-react';
 import { ApodData } from '../types';
 import { formatDate } from '../utils/dateUtils';
+import ApodVideoPlayer from './ApodVideoPlayer';
 import { formatCategoryName, formatDistance } from '../lib/apodClassifier';
 
 export type AstroFilter = 'none' | 'contrast' | 'invert' | 'nebula' | 'mono';
@@ -693,12 +694,10 @@ export default function ImageExpansionOverlay({
         >
           {isVideo ? (
             <div className="w-full max-w-5xl aspect-video p-4">
-              <iframe
-                src={item.url}
+              <ApodVideoPlayer
+                url={item.url}
                 title={`NASA APOD Video Stream: ${item.title}`}
                 className="w-full h-full rounded-2xl shadow-2xl border border-white/10"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
               />
             </div>
           ) : (

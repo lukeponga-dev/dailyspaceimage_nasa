@@ -1,173 +1,184 @@
-/**
- * Favorites Component
- * 
- * - What the component does:
- *   Displays the user's personal catalog of saved Astronomy Pictures of the Day.
- *   Persisted in browser localStorage (`favorites` array), allowing users to browse saved discoveries,
- *   inspect any item in full-screen HD detail overlay (`ImageExpansionOverlay`), remove items,
- *   or jump back to the observation in the main telescope array.
- * 
- * - Why it exists:
- *   Gives users a permanent archival repository for favorite celestial phenomena with instant high-res inspection.
- * 
- * - How it fits into the NASA APOD workflow:
- *   Activated via `currentView === 'favorites'`. Reads from the reactive `favorites` state in `App.tsx`.
- */
-
 import React, { useState } from 'react';
-import { Trash2, ExternalLink, Star, Maximize2 } from 'lucide-react';
+import { Trash2, Star, Maximize2, Sparkles, Compass } from 'lucide-react';
 import { ApodData } from '../types';
-import { formatDate } from '../utils/dateUtils';
-import ImageExpansionOverlay from './ImageExpansionOverlay';
+import ApodModal from './ApodModal';
+import { formatCategoryName } from '../lib/apodClassifier';
 
 interface FavoritesProps {
   favorites: ApodData[];
   onRemoveFavorite: (date: string) => void;
   onSelectImage: (date: string) => void;
+  onToggleFavorite?: (item: ApodData) => void;
 }
 
-export default function Favorites({ favorites, onRemoveFavorite, onSelectImage }: FavoritesProps) {
+export default function Favorites({
+  favorites,
+  onRemoveFavorite,
+  onSelectImage,
+  onToggleFavorite,
+}: FavoritesProps) {
   const [activeModalItem, setActiveModalItem] = useState<ApodData | null>(null);
 
   return (
-    <section id="favorites-vault-root" aria-label="Saved Cosmic Wonders" className="space-y-10 animate-fade-in pb-16 text-left">
-      {/* Header Info */}
-      <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <section id="favorites-vault-root" aria-label="Saved Cosmic Observations" className="w-full space-y-6 text-left pb-16">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-4xl md:text-5xl font-serif font-semibold tracking-tight text-slate-100 leading-none">
-            Saved <span className="italic font-light text-[#E4A853]">Cosmic Wonders</span>
+          <h2 className="text-2xl sm:text-3xl font-serif italic text-text">
+            Saved Telemetry Vault
           </h2>
-          <p className="text-slate-400 mt-3 text-sm md:text-base font-light font-sans tracking-wide">
-            Your curated collection of deep space discoveries and celestial imagery.
+          <p className="text-xs text-text-mid font-mono uppercase tracking-wider mt-1">
+            CURATED CATALOG OF SAVED DEEP SPACE PHENOMENA
           </p>
         </div>
-        <div className="flex items-center gap-2 bg-[#0C0E12] border border-white/5 px-4 py-1.5 rounded-full text-[#E4A853] self-start md:self-auto shadow-[0_0_15px_rgba(228,168,83,0.05)]">
-          <Star className="text-[#E4A853] fill-[#E4A853]" size={12} aria-hidden="true" />
-          <span className="text-[10px] font-mono font-bold tracking-widest uppercase">{favorites.length} Cataloged</span>
-        </div>
-      </header>
 
+        <div className="flex items-center gap-2 bg-surface px-3 py-1.5 rounded-lg border border-border self-start sm:self-auto">
+          <Star size={13} className="text-accent fill-accent" aria-hidden="true" />
+          <span className="text-xs font-mono font-bold text-accent uppercase tracking-widest">
+            {favorites.length} RECORDED
+          </span>
+        </div>
+      </div>
+
+      {/* Empty State */}
       {favorites.length === 0 ? (
-        <div className="flex flex-col items-center justify-center text-center p-12 md:p-20 bg-[#0C0E12] border border-dashed border-white/5 rounded-2xl max-w-2xl mx-auto space-y-6">
-          <div className="w-14 h-14 rounded-full bg-[#050608] border border-[#E4A853]/20 flex items-center justify-center text-slate-500 animate-pulse shadow-[0_0_15px_rgba(228,168,83,0.1)]">
-            <Star size={20} className="text-[#E4A853]" aria-hidden="true" />
+        <div className="scan-card text-center p-12 space-y-4 max-w-md mx-auto">
+          <div className="w-12 h-12 rounded-full bg-surface-hover border border-border-accent flex items-center justify-center text-accent mx-auto">
+            <Star size={20} className="text-accent" aria-hidden="true" />
           </div>
-          <div className="space-y-2">
-            <h3 className="text-lg font-serif font-medium text-slate-200">Celestial Vault Empty</h3>
-            <p className="text-slate-400 max-w-sm text-xs font-sans font-light leading-relaxed">
-              Discover the secrets of the universe. Tap the star icon on any Astronomy Picture of the Day to catalog it here for permanent record.
-            </p>
-          </div>
+          <h3 className="text-lg font-serif italic text-text">Vault is Empty</h3>
+          <p className="text-xs text-text-mid leading-relaxed">
+            Discover the secrets of the cosmos. Tap the star icon on any transmission to archive it into your personal observation vault.
+          </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 gap-6">
-          {favorites.map((item) => (
-            <article 
-              key={item.date} 
-              className="group bg-[#0C0E12] border border-white/5 hover:border-[#E4A853]/30 rounded-xl overflow-hidden hover:shadow-[0_12px_30px_rgba(0,0,0,0.65),0_0_20px_rgba(228,168,83,0.03)] hover:-translate-y-0.5 transition-all duration-300 flex flex-col h-full"
-            >
-              {/* Media Preview Box */}
-              <div
-                role="button"
-                tabIndex={0}
-                onClick={() => setActiveModalItem(item)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    setActiveModalItem(item);
-                  }
-                }}
-                aria-label={`Expand ${item.title} in full-screen detail viewer`}
-                className="relative aspect-video overflow-hidden bg-[#050608] cursor-zoom-in focus:outline-none focus:ring-2 focus:ring-[#E4A853]"
-              >
-                {item.media_type === 'image' ? (
-                  <img 
-                    src={item.url} 
-                    alt={`Observation: ${item.title}`} 
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    referrerPolicy="no-referrer"
-                    loading="lazy"
-                    decoding="async"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-[#050608] text-slate-500">
-                    <span className="text-[10px] font-mono uppercase tracking-widest text-slate-400">Video Content</span>
-                  </div>
-                )}
-                <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-[#050608] via-transparent to-transparent opacity-60 pointer-events-none" />
-                <time dateTime={item.date} className="absolute bottom-3 left-3 bg-[#050608]/90 backdrop-blur-sm border border-white/5 px-2 py-0.5 rounded text-[10px] font-mono text-slate-300">
-                  {formatDate(item.date)}
-                </time>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {favorites.map((item) => {
+            const isVideo = item.media_type === 'video';
+            const catName = item.category ? formatCategoryName(item.category) : 'Observation';
 
-                {/* Hover Cue */}
+            return (
+              <article
+                key={item.date}
+                className="featured group"
+              >
+                {/* Media Preview */}
                 <div
-                  aria-hidden="true"
-                  className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center pointer-events-none"
+                  className="w-full aspect-video relative overflow-hidden bg-surface-raised cursor-pointer"
+                  onClick={() => onSelectImage(item.date)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      onSelectImage(item.date);
+                    }
+                  }}
+                  aria-label={`View ${item.title}`}
                 >
-                  <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#0C0E12]/95 border border-[#E4A853]/60 text-[#E4A853] text-[11px] font-mono shadow-xl">
-                    <Maximize2 size={13} />
-                    <span>Inspect Detail (HD)</span>
+                  {isVideo ? (
+                    <div className="w-full h-full flex items-center justify-center bg-black/60">
+                      <span className="text-[9px] font-mono tracking-wider text-accent uppercase bg-black/70 px-2 py-0.5 rounded">
+                        Video
+                      </span>
+                    </div>
+                  ) : (
+                    <img
+                      src={item.url}
+                      alt={item.title}
+                      loading="lazy"
+                      decoding="async"
+                      referrerPolicy="no-referrer"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                  )}
+
+                  <div className="absolute top-2 left-2 right-2 flex items-center justify-between z-10">
+                    <span className="text-[9px] font-mono uppercase tracking-widest px-2 py-0.5 rounded-full bg-black/70 backdrop-blur-md text-accent border border-border">
+                      {item.date}
+                    </span>
+
+                    <button
+                      type="button"
+                      className="w-7 h-7 rounded-full bg-black/70 backdrop-blur-md border border-border flex items-center justify-center text-text-dim hover:text-red-400 transition-colors"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onRemoveFavorite(item.date);
+                      }}
+                      title="Remove from vault"
+                      aria-label={`Remove ${item.title} from vault`}
+                    >
+                      <Trash2 size={12} />
+                    </button>
                   </div>
                 </div>
-              </div>
 
-              {/* Informative Body */}
-              <div className="p-4 flex flex-col flex-grow space-y-3">
-                <h3 className="font-semibold text-slate-200 text-sm leading-snug group-hover:text-[#E4A853] transition-colors line-clamp-1">
-                  {item.title}
-                </h3>
-                <p className="text-slate-400 text-xs leading-relaxed line-clamp-3 flex-grow font-sans font-light">
-                  {item.explanation}
-                </p>
+                {/* Card Content */}
+                <div className="p-3.5 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[9px] font-mono uppercase tracking-wider text-teal bg-teal-dim px-1.5 py-0.5 rounded">
+                      {catName}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setActiveModalItem(item)}
+                      className="text-text-dim hover:text-accent transition-colors"
+                      title="Inspect full screen"
+                      aria-label="Inspect full screen"
+                    >
+                      <Maximize2 size={13} aria-hidden="true" />
+                    </button>
+                  </div>
 
-                {/* Footer Operations */}
-                <div className="flex items-center justify-between pt-3 border-t border-white/5 mt-auto">
-                  <div className="flex items-center gap-2">
+                  <h3
+                    className="text-sm font-semibold text-text line-clamp-1 cursor-pointer hover:text-accent transition-colors"
+                    onClick={() => onSelectImage(item.date)}
+                  >
+                    {item.title}
+                  </h3>
+
+                  <p className="text-[11px] text-text-mid line-clamp-2 leading-relaxed">
+                    {item.explanation}
+                  </p>
+
+                  <div className="pt-2 border-t border-border flex items-center justify-between">
                     <button
                       type="button"
                       onClick={() => onSelectImage(item.date)}
-                      aria-label={`View ${item.title} in Astronomy Picture of the Day array`}
-                      className="inline-flex items-center gap-1.5 text-xs text-[#E4A853] hover:text-[#ffd99e] font-semibold transition cursor-pointer focus:outline-none focus:underline"
+                      className="text-[10px] font-mono uppercase tracking-wider text-accent hover:underline bg-transparent border-0 p-0 cursor-pointer"
                     >
-                      <ExternalLink size={12} aria-hidden="true" />
-                      <span>View APOD</span>
+                      Load Telemetry →
                     </button>
                     <button
                       type="button"
                       onClick={() => setActiveModalItem(item)}
-                      className="inline-flex items-center gap-1 text-xs text-slate-400 hover:text-slate-200 transition cursor-pointer"
-                      title="Inspect Detail"
+                      className="text-[10px] font-mono uppercase tracking-wider text-text-dim hover:text-text bg-transparent border-0 p-0 cursor-pointer"
                     >
-                      <Maximize2 size={12} />
-                      <span className="hidden sm:inline">Inspect</span>
+                      Inspect HD
                     </button>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => onRemoveFavorite(item.date)}
-                    aria-label={`Remove ${item.title} from favorites`}
-                    className="p-1.5 text-slate-500 hover:text-red-400 hover:bg-[#050608] rounded-full transition cursor-pointer focus:outline-none focus:ring-1 focus:ring-red-400"
-                    title="Remove from favorites"
-                  >
-                    <Trash2 size={13} aria-hidden="true" />
-                  </button>
                 </div>
-              </div>
-            </article>
-          ))}
+              </article>
+            );
+          })}
         </div>
       )}
 
-      {/* Full-Screen Detail Expansion Overlay */}
-      <ImageExpansionOverlay
-        item={activeModalItem}
-        isOpen={Boolean(activeModalItem)}
-        onClose={() => setActiveModalItem(null)}
-        onSelectDate={(date) => {
-          onSelectImage(date);
-          setActiveModalItem(null);
-        }}
-      />
+      {/* Inspect Modal */}
+      {activeModalItem && (
+        <ApodModal
+          item={activeModalItem}
+          onClose={() => setActiveModalItem(null)}
+          isFavorite={true}
+          onToggleFavorite={() => {
+            onRemoveFavorite(activeModalItem.date);
+            setActiveModalItem(null);
+          }}
+          onJumpToDate={(d) => {
+            setActiveModalItem(null);
+            onSelectImage(d);
+          }}
+        />
+      )}
     </section>
   );
 }

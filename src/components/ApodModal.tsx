@@ -1,39 +1,31 @@
-/**
- * ApodModal Component
- * 
- * - What the component does:
- *   Wraps and renders the high-definition, immersive ImageExpansionOverlay for NASA Astronomy Picture of the Day.
- *   Provides deep detail inspection with multi-scale zoom (50% to 500%), click-and-drag pan, mouse wheel zoom,
- *   double-click magnification, astrometric spectral filters (HDR Contrast, Negative, Nebula Boost, Monochrome),
- *   mini-map radar navigation, collapsible telemetry intel drawer, and full keyboard hotkey support.
- * 
- * - Why it exists:
- *   Maintains backward compatibility across the component tree while delivering a full-screen image expansion experience.
- * 
- * - How it fits into the NASA APOD workflow:
- *   Triggered whenever users click an observation in `NasaApod.tsx`, `ApodHero.tsx`, `Gallery.tsx`, or `Favorites.tsx`.
- */
-
 import React from 'react';
 import { ApodData } from '../types';
 import ImageExpansionOverlay from './ImageExpansionOverlay';
 
 interface ApodModalProps {
   item: ApodData | null;
-  isOpen: boolean;
+  isOpen?: boolean;
   onClose: () => void;
   onSelectDate?: (date: string) => void;
+  onJumpToDate?: (date: string) => void;
+  isFavorite?: boolean;
+  onToggleFavorite?: (item: ApodData) => void;
 }
 
-export default function ApodModal({ item, isOpen, onClose, onSelectDate }: ApodModalProps) {
+export default function ApodModal({
+  item,
+  isOpen = true,
+  onClose,
+  onSelectDate,
+  onJumpToDate,
+}: ApodModalProps) {
+  const handleDate = onSelectDate || onJumpToDate;
   return (
     <ImageExpansionOverlay
       item={item}
-      isOpen={isOpen}
+      isOpen={Boolean(item) && isOpen}
       onClose={onClose}
-      onSelectDate={onSelectDate}
+      onSelectDate={handleDate}
     />
   );
 }
-
-

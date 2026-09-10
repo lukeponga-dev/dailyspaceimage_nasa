@@ -1,54 +1,87 @@
 import React from 'react';
-import { Compass, Sparkles, Database, Github, Code, Shield } from 'lucide-react';
+import { Database, Code, Radio, Shield, Sparkles, Compass } from 'lucide-react';
 
 export default function About() {
   return (
-    <div className="w-full max-w-4xl mx-auto space-y-8 py-8 animate-fade-in text-left relative">
-      <div className="absolute top-0 right-1/4 w-96 h-96 bg-[#E4A853]/5 blur-[120px] rounded-full pointer-events-none -z-10" />
-
-      <div className="space-y-4 pb-8 border-b border-white/5">
-        <h2 className="text-3xl md:text-4xl font-serif font-bold text-white tracking-tight">
-          About the <span className="italic font-light text-[#E4A853]">Mission</span>
+    <div className="w-full space-y-6 text-left pb-16" id="about-mission-root">
+      {/* Header */}
+      <div>
+        <h2 className="text-2xl sm:text-3xl font-serif italic text-text">
+          Deep Space Uplink Mission Dossier
         </h2>
-        <p className="text-slate-300 font-light font-sans max-w-2xl leading-relaxed">
-          The NASA Daily Space Image Viewer provides an immersive, high-resolution interface to explore the cosmos. Powered directly by NASA's Astronomy Picture of the Day (APOD) API, it brings deep-space telemetry, historical archives, and educational astronomy directly to your viewport.
+        <p className="text-xs text-text-mid font-mono uppercase tracking-wider mt-1">
+          OPERATIONAL SPECIFICATION • NASA APOD TELEMETRY INTERFACE
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-[#0C0E12] border border-white/10 rounded-2xl p-6 shadow-xl space-y-4">
-          <div className="h-10 w-10 rounded-lg bg-[#E4A853]/10 flex items-center justify-center text-[#E4A853]">
-            <Database size={20} />
-          </div>
-          <h3 className="text-lg font-serif font-semibold text-slate-100">NASA APOD API</h3>
-          <p className="text-sm font-light text-slate-400 leading-relaxed font-sans">
-            All imagery and metadata are sourced directly from NASA. The APOD project has been running since 1995, featuring a different image or photograph of our universe each day, along with a brief explanation written by a professional astronomer.
-          </p>
+      {/* Mission Overview Card */}
+      <div className="scan-card">
+        <div className="scan-title flex items-center justify-between">
+          <span>Telemetry Protocol</span>
+          <span className="text-[9px] font-mono text-teal">ACTIVE LINK</span>
         </div>
 
-        <div className="bg-[#0C0E12] border border-white/10 rounded-2xl p-6 shadow-xl space-y-4">
-          <div className="h-10 w-10 rounded-lg bg-[#E4A853]/10 flex items-center justify-center text-[#E4A853]">
-            <Code size={20} />
+        <p className="text-sm text-text leading-relaxed font-sans">
+          Deep Space Uplink is an observational telemetry interface engineered to explore NASA's Astronomy Picture of the Day (APOD) archive. Sourced directly from NASA Goddard Space Flight Center and professional astronomers, it decodes celestial imagery, distance metrics, and spectral classifications in real time.
+        </p>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-border">
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-2 text-accent">
+              <Database size={15} />
+              <span className="text-xs font-semibold uppercase tracking-wider font-mono">
+                NASA APOD API
+              </span>
+            </div>
+            <p className="text-xs text-text-mid leading-relaxed">
+              Continuous operation since June 16, 1995. Features daily celestial photographs and scientific explanations composed by NASA astronomers.
+            </p>
           </div>
-          <h3 className="text-lg font-serif font-semibold text-slate-100">Developer Intel</h3>
-          <p className="text-sm font-light text-slate-400 leading-relaxed font-sans">
-            Built by Luke Ponga. Designed with a mobile-first philosophy, utilizing React 18, Tailwind CSS, and Framer Motion to create a fluid, cinematic experience across all devices.
-          </p>
+
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-2 text-teal">
+              <Radio size={15} />
+              <span className="text-xs font-semibold uppercase tracking-wider font-mono">
+                Astrometric Classifier
+              </span>
+            </div>
+            <p className="text-xs text-text-mid leading-relaxed">
+              Lexical spectral analyzer that identifies celestial types (e.g. Eclipsing Binaries, Spiral Galaxies, Emission Nebulae) and estimates astronomical distances in light-years.
+            </p>
+          </div>
         </div>
       </div>
 
-      <div className="bg-[#050608]/80 backdrop-blur-md border border-[#E4A853]/20 rounded-2xl p-8 mt-12 text-center space-y-6 shadow-2xl relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-[#E4A853]/10 blur-3xl rounded-full" />
-        <Sparkles size={24} className="text-[#E4A853] mx-auto" />
-        <h4 className="text-xl font-serif text-white">Version 1.0.0 — Orbital Release</h4>
-        <div className="flex flex-wrap justify-center gap-4 text-xs font-mono">
-          <a href="#" className="flex items-center gap-1.5 px-4 py-2 bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white rounded-lg transition-colors border border-white/10">
-            <Github size={14} /> Open Source
-          </a>
-          <a href="#" className="flex items-center gap-1.5 px-4 py-2 bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white rounded-lg transition-colors border border-white/10">
-            <Shield size={14} /> Privacy Policy
-          </a>
+      {/* Specifications Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="p-4 bg-surface border border-border rounded-xl space-y-1 text-left">
+          <span className="text-[10px] font-mono text-text-dim uppercase tracking-wider">Archive Span</span>
+          <div className="text-lg font-semibold text-text font-serif italic">1995 — 2026+</div>
+          <p className="text-[11px] text-text-mid">Over 11,000 cosmic transmissions cataloged.</p>
         </div>
+
+        <div className="p-4 bg-surface border border-border rounded-xl space-y-1 text-left">
+          <span className="text-[10px] font-mono text-text-dim uppercase tracking-wider">Design Architecture</span>
+          <div className="text-lg font-semibold text-accent font-serif italic">Deep Space Uplink</div>
+          <p className="text-[11px] text-text-mid">Dual-theme high-contrast editorial typography.</p>
+        </div>
+
+        <div className="p-4 bg-surface border border-border rounded-xl space-y-1 text-left">
+          <span className="text-[10px] font-mono text-text-dim uppercase tracking-wider">Storage State</span>
+          <div className="text-lg font-semibold text-teal font-serif italic">Client Vault</div>
+          <p className="text-[11px] text-text-mid">Local L1/L2 tiered caching with offline memory map.</p>
+        </div>
+      </div>
+
+      {/* Credits & Footer Banner */}
+      <div className="scan-card text-center p-6 space-y-3">
+        <Sparkles size={20} className="text-accent mx-auto" aria-hidden="true" />
+        <h3 className="text-base font-serif italic text-text">
+          Deep Space Uplink • Version 2.0
+        </h3>
+        <p className="text-xs text-text-mid max-w-md mx-auto">
+          Crafted with React 19, TypeScript, and Tailwind CSS. Imagery courtesy of NASA, STScI, ESA, and contributing astrophotographers worldwide.
+        </p>
       </div>
     </div>
   );

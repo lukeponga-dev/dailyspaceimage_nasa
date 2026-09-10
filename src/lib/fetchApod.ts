@@ -7,6 +7,7 @@ import {
   NASA_EPOCH 
 } from '../utils/dateUtils';
 import { buildApodTelemetry } from './apodClassifier';
+import { getCuratedFallbackApods } from './fallbackApodData';
 
 const NASA_API_KEY = process.env.NASA_API_KEY || "DQyanRGtyfc3NAXvp1c69yTUBiEUt32RISDWcajH";
 const BASE_URL = "https://api.nasa.gov/planetary/apod";
@@ -19,18 +20,6 @@ const LOCAL_STORAGE_KEY_PREFIX = 'nasa_apod_cache_';
 
 /**
  * Retrieves cached APOD telemetry from the tiered cache hierarchy (L1 Memory Map -> L2 Browser Storage).
- * 
- * - What it does:
- *   Checks in-memory `Map` first for instant sub-millisecond retrieval. If missing, attempts to read
- *   and deserialize the payload from `localStorage`, hydrating the memory cache on hit.
- * 
- * - Why it exists:
- *   NASA APOD API has stringent rate limits (30 req/hr for DEMO_KEY, 1000/hr for standard keys).
- *   Caching prevents repeated network trips for immutable historical astronomy data.
- * 
- * - How it fits into the workflow:
- *   Invoked synchronously at the entry of `fetchApod` before any outbound HTTP dispatch occurs,
- *   enabling immediate offline rendering and preventing duplicate API calls across component re-renders.
  */
 export function getCachedApod(date: string): ApodData | null {
   if (memoryCache.has(date)) {
@@ -44,63 +33,47 @@ export function getCachedApod(date: string): ApodData | null {
       return parsed;
     }
   } catch {
-    // Ignore localStorage read errors (e.g. private browsing storage access restrictions)
+    // Ignore localStorage read errors
   }
   return null;
 }
 
 /**
  * Persists an APOD record into both memory and persistent browser storage.
- * 
- * - What it does:
- *   Stores the normalized `ApodData` entity in the runtime `memoryCache` and serializes it
- *   into browser `localStorage` with a standardized namespace prefix.
- * 
- * - Why it exists:
- *   Guarantees fast reloads across user browser sessions and provides an offline fallback
- *   buffer if the user later encounters network dropouts or upstream 429 rate limits.
- * 
- * - How it fits into the workflow:
- *   Invoked immediately after a successful response from `fetchWithRetry` in `fetchApod`,
- *   ensuring newly discovered celestial records are instantly cached for subsequent views.
  */
 export function setCachedApod(date: string, data: ApodData): void {
   memoryCache.set(date, data);
   try {
     localStorage.setItem(`${LOCAL_STORAGE_KEY_PREFIX}${date}`, JSON.stringify(data));
   } catch {
-    // Gracefully ignore quota exceed errors on limited storage devices
+    // Gracefully ignore quota exceed errors
   }
 }
 
 /**
  * Dispatches an HTTP request with exponential backoff retries and explicit timeout abort signals.
- * 
- * - What it does:
- *   Executes `fetch` wrapped in an `AbortController` timeout window. On transient network drops
- *   or 5xx server errors, automatically retries up to `retries` times with linear/exponential backoff.
- * 
- * - Why it exists:
- *   NASA government APIs and intermediate networks intermittently drop packets or encounter latency spikes.
- *   Standard `fetch` hangs indefinitely without a signal, which would freeze UI loading states.
- * 
- * - How it fits into the workflow:
- *   Acts as the unified network transport primitive for all upstream APOD fetching routines
- *   (`fetchApod`, `fetchApodRange`, `fetchRandomApods`), ensuring resilient telemetry gathering.
  */
-async function fetchWithRetry(url: string, retries = 3, timeout = 10000): Promise<Response> {
+async function fetchWithRetry(url: string, retries = 2, timeout = 16000): Promise<Response> {
+  let lastError: any = null;
+
   for (let i = 0; i < retries; i++) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => {
+      try {
+        controller.abort(new DOMException(`NASA telemetry link timed out after ${timeout}ms`, 'TimeoutError'));
+      } catch {
+        controller.abort();
+      }
+    }, timeout);
+
     try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), timeout);
       const res = await fetch(url, { signal: controller.signal });
       clearTimeout(timeoutId);
 
       if (res.ok) return res;
 
-      // Handle specific HTTP statuses
       if (res.status === 429) {
-        throw new Error('Rate limit exceeded (HTTP 429). Utilizing cached astronomical telemetry.');
+        throw new Error('Rate limit reached (HTTP 429). Engaging cached astronomical telemetry.');
       }
 
       let errorMsg = `HTTP ${res.status}`;
@@ -116,77 +89,73 @@ async function fetchWithRetry(url: string, retries = 3, timeout = 10000): Promis
       }
       throw new Error(errorMsg);
     } catch (err: any) {
-      // Don't retry client errors or rate limits
-      if (err.message?.includes('429') || err.message?.includes('Rate limit')) {
-        throw err;
+      clearTimeout(timeoutId);
+      lastError = err;
+
+      // Clean up abort/timeout error message
+      if (err.name === 'AbortError' || err.name === 'TimeoutError' || err.message?.includes('aborted')) {
+        lastError = new Error(`NASA telemetry link timed out after ${timeout}ms.`);
       }
-      if (i === retries - 1) throw err;
-      await new Promise((resolve) => setTimeout(resolve, 1000 * (i + 1)));
+
+      // Don't retry rate limits
+      if (err.message?.includes('429') || err.message?.includes('Rate limit')) {
+        throw lastError;
+      }
+
+      if (i < retries - 1) {
+        await new Promise((resolve) => setTimeout(resolve, 800 * (i + 1)));
+      }
     }
   }
-  throw new Error('Telemetry connection timed out.');
+
+  throw lastError || new Error('Telemetry connection timed out.');
+}
+
+export interface FetchApodResult {
+  data: ApodData;
+  actualDate: string;
+  isFallback: boolean;
 }
 
 /**
  * Fetches a single APOD record for a specific date or today's latest entry, with fallback self-healing.
- * 
- * - What it does:
- *   Validates requested dates against NASA's historical bounds (1995-06-16 to Eastern US 'today'),
- *   checks the tiered cache, issues the network request, and auto-corrects to fallback dates if NASA's
- *   daily release has not yet been published for the target timezone.
- * 
- * - Why it exists:
- *   Provides the primary data pipeline for the hero view and date-picker interactions, shielding the
- *   UI from timezone mismatches and partial publication outages.
- * 
- * - How it fits into the workflow:
- *   Called during initial application mount (`App.tsx`) to populate today's feature image, and re-triggered
- *   when the user selects any calendar date or clicks date navigation controls.
  */
-export async function fetchApod(targetDate?: string): Promise<{ data: ApodData; actualDate: string; isFallback?: boolean }> {
-  const easternToday = getEasternDate();
-  let requestedDate = targetDate || easternToday;
+export async function fetchApod(date?: string): Promise<FetchApodResult> {
+  const today = getEasternDate();
+  const requestedDate = date || today;
 
-  // Validate date is within bounds
+  // 1. Guard against historical boundaries
   if (requestedDate < NASA_EPOCH) {
-    throw new Error(`Invalid date. APOD archive begins on ${NASA_EPOCH}.`);
+    throw new Error(`Requested observation date ${requestedDate} precedes NASA APOD epoch (${NASA_EPOCH}).`);
   }
 
-  // Prevent requesting future dates
-  if (requestedDate > easternToday) {
-    requestedDate = easternToday;
-  }
-
-  // Check cache first
+  // 2. Check tiered cache
   const cached = getCachedApod(requestedDate);
   if (cached) {
-    return { data: cached, actualDate: requestedDate };
+    return { data: cached, actualDate: cached.date, isFallback: false };
   }
 
-  const url = targetDate && targetDate !== easternToday
-    ? `${BASE_URL}?api_key=${NASA_API_KEY}&date=${requestedDate}`
-    : `${BASE_URL}?api_key=${NASA_API_KEY}`;
-
+  // 3. Dispatch network request with fallback recovery
   try {
+    const url = requestedDate
+      ? `${BASE_URL}?api_key=${NASA_API_KEY}&date=${requestedDate}`
+      : `${BASE_URL}?api_key=${NASA_API_KEY}`;
+
     const res = await fetchWithRetry(url);
-    const rawData = await res.json();
+    const raw = await res.json();
 
-    if (rawData.code && rawData.code !== 200) {
-      throw new Error(rawData.msg || `NASA API error: Code ${rawData.code}`);
-    }
-
-    const title = rawData.title || 'Untitled Cosmic Observation';
-    const explanation = rawData.explanation || 'No astronomical telemetry explanation provided by NASA.';
+    const title = raw.title || 'Untitled Cosmic Observation';
+    const explanation = raw.explanation || '';
     const telemetry = buildApodTelemetry({ title, explanation });
 
-    const apodItem: ApodData = {
+    const item: ApodData = {
       title,
-      url: rawData.url || '',
+      url: raw.url || '',
       explanation,
-      date: rawData.date || requestedDate,
-      media_type: rawData.media_type || 'image',
-      copyright: rawData.copyright,
-      hdurl: rawData.hdurl || rawData.url,
+      date: raw.date || requestedDate,
+      media_type: raw.media_type || 'image',
+      copyright: raw.copyright,
+      hdurl: raw.hdurl || raw.url,
       category: telemetry.category,
       confidence: telemetry.confidence,
       matchedKeywords: telemetry.matchedKeywords,
@@ -194,51 +163,63 @@ export async function fetchApod(targetDate?: string): Promise<{ data: ApodData; 
       distance: telemetry.distance,
     };
 
-    setCachedApod(apodItem.date, apodItem);
-    return { data: apodItem, actualDate: apodItem.date };
+    setCachedApod(item.date, item);
+    return { data: item, actualDate: item.date, isFallback: false };
   } catch (err: any) {
     const errMsg = err.message || '';
 
-    // If rate-limited, try returning cached data or previous day's cache
-    if (errMsg.includes('429') || errMsg.includes('Rate limit')) {
-      const fallbackCached = getCachedApod(requestedDate) || getCachedApod(addDays(requestedDate, -1));
-      if (fallbackCached) {
-        return { data: fallbackCached, actualDate: fallbackCached.date, isFallback: true };
-      }
+    // If rate-limited or offline, check cache for requested or previous days
+    const fallbackCached =
+      getCachedApod(requestedDate) ||
+      getCachedApod(addDays(requestedDate, -1)) ||
+      getCachedApod(today);
+    if (fallbackCached) {
+      return { data: fallbackCached, actualDate: fallbackCached.date, isFallback: true };
     }
 
-    // Auto-correct if date limit reached
+    // Auto-correct if date limit reached (future or timezone mismatch)
     if (isDateUnavailableError(errMsg)) {
       const parsedMax = parseMaxDateFromMessage(errMsg);
       const fallbackDate = parsedMax || addDays(requestedDate, -1);
 
       if (fallbackDate >= NASA_EPOCH && fallbackDate !== requestedDate) {
-        // Attempt fetch with fallback date
-        const fallbackRes = await fetch(`${BASE_URL}?api_key=${NASA_API_KEY}&date=${fallbackDate}`);
-        if (fallbackRes.ok) {
-          const fallbackData = await fallbackRes.json();
-          const fTitle = fallbackData.title || 'Untitled Cosmic Observation';
-          const fExpl = fallbackData.explanation || '';
-          const fTelemetry = buildApodTelemetry({ title: fTitle, explanation: fExpl });
+        try {
+          const fallbackRes = await fetch(`${BASE_URL}?api_key=${NASA_API_KEY}&date=${fallbackDate}`);
+          if (fallbackRes.ok) {
+            const fallbackData = await fallbackRes.json();
+            const fTitle = fallbackData.title || 'Untitled Cosmic Observation';
+            const fExpl = fallbackData.explanation || '';
+            const fTelemetry = buildApodTelemetry({ title: fTitle, explanation: fExpl });
 
-          const item: ApodData = {
-            title: fTitle,
-            url: fallbackData.url || '',
-            explanation: fExpl,
-            date: fallbackData.date || fallbackDate,
-            media_type: fallbackData.media_type || 'image',
-            copyright: fallbackData.copyright,
-            hdurl: fallbackData.hdurl || fallbackData.url,
-            category: fTelemetry.category,
-            confidence: fTelemetry.confidence,
-            matchedKeywords: fTelemetry.matchedKeywords,
-            distanceLightYears: fTelemetry.distanceLightYears,
-            distance: fTelemetry.distance,
-          };
-          setCachedApod(item.date, item);
-          return { data: item, actualDate: item.date, isFallback: true };
+            const item: ApodData = {
+              title: fTitle,
+              url: fallbackData.url || '',
+              explanation: fExpl,
+              date: fallbackData.date || fallbackDate,
+              media_type: fallbackData.media_type || 'image',
+              copyright: fallbackData.copyright,
+              hdurl: fallbackData.hdurl || fallbackData.url,
+              category: fTelemetry.category,
+              confidence: fTelemetry.confidence,
+              matchedKeywords: fTelemetry.matchedKeywords,
+              distanceLightYears: fTelemetry.distanceLightYears,
+              distance: fTelemetry.distance,
+            };
+            setCachedApod(item.date, item);
+            return { data: item, actualDate: item.date, isFallback: true };
+          }
+        } catch {
+          // Fall through to curated fallback
         }
       }
+    }
+
+    // Return curated authentic APOD record if network failed completely
+    const curated = getCuratedFallbackApods();
+    const match = curated.find((c) => c.date === requestedDate) || curated[0];
+    if (match) {
+      setCachedApod(match.date, match);
+      return { data: match, actualDate: match.date, isFallback: true };
     }
 
     throw err;
@@ -249,60 +230,94 @@ export async function fetchApod(targetDate?: string): Promise<{ data: ApodData; 
  * Queries a chronological span of APOD observations between two RFC-3339 dates.
  */
 export async function fetchApodRange(startDate: string, endDate: string): Promise<ApodData[]> {
-  const url = `${BASE_URL}?api_key=${NASA_API_KEY}&start_date=${startDate}&end_date=${endDate}`;
-  const res = await fetchWithRetry(url);
-  const data = await res.json();
-  const list: any[] = Array.isArray(data) ? data : [data];
-  
-  return list.map((item) => {
-    const title = item.title || 'Astronomical Observation';
-    const explanation = item.explanation || '';
-    const telemetry = buildApodTelemetry({ title, explanation });
+  try {
+    const url = `${BASE_URL}?api_key=${NASA_API_KEY}&start_date=${startDate}&end_date=${endDate}`;
+    const res = await fetchWithRetry(url, 2, 20000);
+    const data = await res.json();
+    const list: any[] = Array.isArray(data) ? data : [data];
+    
+    const items = list.map((item) => {
+      const title = item.title || 'Astronomical Observation';
+      const explanation = item.explanation || '';
+      const telemetry = buildApodTelemetry({ title, explanation });
 
-    return {
-      title,
-      url: item.url || '',
-      explanation,
-      date: item.date || '',
-      media_type: item.media_type || 'image',
-      copyright: item.copyright,
-      hdurl: item.hdurl || item.url,
-      category: telemetry.category,
-      confidence: telemetry.confidence,
-      matchedKeywords: telemetry.matchedKeywords,
-      distanceLightYears: telemetry.distanceLightYears,
-      distance: telemetry.distance,
-    };
-  });
+      const apodItem: ApodData = {
+        title,
+        url: item.url || '',
+        explanation,
+        date: item.date || '',
+        media_type: item.media_type || 'image',
+        copyright: item.copyright,
+        hdurl: item.hdurl || item.url,
+        category: telemetry.category,
+        confidence: telemetry.confidence,
+        matchedKeywords: telemetry.matchedKeywords,
+        distanceLightYears: telemetry.distanceLightYears,
+        distance: telemetry.distance,
+      };
+
+      if (apodItem.date) {
+        setCachedApod(apodItem.date, apodItem);
+      }
+      return apodItem;
+    });
+
+    if (items.length > 0) {
+      return items;
+    }
+  } catch (err) {
+    console.warn('Live APOD range fetch timed out or hit rate limits; engaging archival catalog fallback.', err);
+  }
+
+  // Graceful fallback: return curated authentic astronomical archive
+  const fallbacks = getCuratedFallbackApods();
+  fallbacks.forEach((f) => setCachedApod(f.date, f));
+  return fallbacks;
 }
 
 /**
  * Retrieves a non-deterministic sample of random historical APOD records.
  */
 export async function fetchRandomApods(count = 24): Promise<ApodData[]> {
-  const url = `${BASE_URL}?api_key=${NASA_API_KEY}&count=${count}`;
-  const res = await fetchWithRetry(url);
-  const data = await res.json();
-  const list: any[] = Array.isArray(data) ? data : [data];
+  try {
+    const url = `${BASE_URL}?api_key=${NASA_API_KEY}&count=${Math.min(count, 20)}`;
+    const res = await fetchWithRetry(url, 2, 18000);
+    const data = await res.json();
+    const list: any[] = Array.isArray(data) ? data : [data];
 
-  return list.map((item) => {
-    const title = item.title || 'Astronomical Observation';
-    const explanation = item.explanation || '';
-    const telemetry = buildApodTelemetry({ title, explanation });
+    const items = list.map((item) => {
+      const title = item.title || 'Astronomical Observation';
+      const explanation = item.explanation || '';
+      const telemetry = buildApodTelemetry({ title, explanation });
 
-    return {
-      title,
-      url: item.url || '',
-      explanation,
-      date: item.date || '',
-      media_type: item.media_type || 'image',
-      copyright: item.copyright,
-      hdurl: item.hdurl || item.url,
-      category: telemetry.category,
-      confidence: telemetry.confidence,
-      matchedKeywords: telemetry.matchedKeywords,
-      distanceLightYears: telemetry.distanceLightYears,
-      distance: telemetry.distance,
-    };
-  });
+      const apodItem: ApodData = {
+        title,
+        url: item.url || '',
+        explanation,
+        date: item.date || '',
+        media_type: item.media_type || 'image',
+        copyright: item.copyright,
+        hdurl: item.hdurl || item.url,
+        category: telemetry.category,
+        confidence: telemetry.confidence,
+        matchedKeywords: telemetry.matchedKeywords,
+        distanceLightYears: telemetry.distanceLightYears,
+        distance: telemetry.distance,
+      };
+
+      if (apodItem.date) {
+        setCachedApod(apodItem.date, apodItem);
+      }
+      return apodItem;
+    });
+
+    if (items.length > 0) return items;
+  } catch (err) {
+    console.warn('Random APOD live fetch timed out or hit rate limits; engaging archival catalog fallback.', err);
+  }
+
+  // Fallback to shuffled curated records
+  const fallbacks = getCuratedFallbackApods();
+  fallbacks.forEach((f) => setCachedApod(f.date, f));
+  return [...fallbacks].sort(() => 0.5 - Math.random());
 }
